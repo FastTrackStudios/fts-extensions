@@ -1,3 +1,185 @@
-/target
-.cache
+# =============================================================================
+# FastTrackStudio .gitignore
+# =============================================================================
+
+# =============================================================================
+# Rust / Cargo
+# =============================================================================
+/target/
+**/target/
+Cargo.lock
+*.rs.bk
+*.pdb
+
+# =============================================================================
+# Nix
+# =============================================================================
+result
+result-*
+.direnv/
+
+# =============================================================================
+# Node.js / JavaScript (Playwright, npm packages)
+# =============================================================================
+node_modules/
+**/node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+.npm/
+.yarn/
+.pnp.*
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+tests/playwright/test-results/
+tests/playwright/playwright-report/
+
+# =============================================================================
+# Dioxus / WASM
+# =============================================================================
+# Dioxus build output (kept in target/dx/)
+# dist/ directories from web builds
+**/dist/
+*.wasm
+!*.wasm.gz
+
+# =============================================================================
+# IDE / Editor
+# =============================================================================
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# JetBrains (IntelliJ, CLion, RustRover)
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Vim/Neovim
+*.swp
+*.swo
+*~
+.netrwhist
+tags
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# =============================================================================
+# macOS
+# =============================================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# =============================================================================
+# Linux
+# =============================================================================
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =============================================================================
+# Windows
+# =============================================================================
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# =============================================================================
+# Project-specific
+# =============================================================================
+# Local environment files
+.env
+.env.local
+.env.*.local
+
+# Cache directories
+.cache/
 .tracey/
+
+# Coverage reports
+lcov.info
+coverage/
+*.lcov
+
+# Debug/profiling
+*.log
+*.prof
+perf.data
+perf.data.old
+flamegraph.svg
+callgrind.out.*
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+*.backup
+
+# SHM files (shared memory)
+*.shm
+
+# Unix sockets
+*.sock
+
+# =============================================================================
+# Build artifacts that might be generated
+# =============================================================================
+# CLAP/VST3 plugin bundles (if we add audio plugins later)
+*.clap/
+*.vst3/
+*.component/
+*.vst/
+
+# =============================================================================
+# Documentation builds
+# =============================================================================
+/docs/book/
+/target/doc/
+
+# =============================================================================
+# Docker
+# =============================================================================
+.docker/
+
+# =============================================================================
+# Secrets (never commit these!)
+# =============================================================================
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+.secrets/
