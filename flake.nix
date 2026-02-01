@@ -1,0 +1,210 @@
+{
+  description = "FastTrackStudio - DAW control system with roam RPC";
+
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixpkgs-unstable";
+    flake-parts.url = "github:hercules-ci/flake-parts";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    crane.url = "github:ipetkov/crane";
+  };
+
+  outputs = { self, flake-parts, crane, ... } @inputs:
+    flake-parts.lib.mkFlake { inherit inputs; } {
+      systems = [ "x86_64-linux" "x86_64-darwin" "aarch64-darwin" "aarch64-linux" ];
+
+      perSystem = { self', config, pkgs, lib, system, ... }:
+        let
+          # Rust toolchain with WASM support
+          rustToolchain = pkgs.rust-bin.stable.latest.default.override {
+            extensions = [ "rust-src" "rust-analyzer" "clippy" "rustfmt" ];
+            targets = [ "wasm32-unknown-unknown" ];
+          };
+
+          # Crane lib configured with our toolchain
+          craneLib = (crane.mkLib pkgs).overrideToolchain rustToolchain;
+
+          # Version info
+          rev = toString (self.shortRev or self.dirtyShortRev or self.lastModified or "unknown");
+
+          # Source filtering
+          src = craneLib.cleanCargoSource ./.;
+
+          # Build dependencies
+          buildInputs = (with pkgs; [
+            openssl openssl.dev libiconv pkg-config fontconfig freetype cmake python3
+          ])
+          ++ lib.optionals pkgs.stdenv.isLinux (with pkgs; [
+            alsa-lib alsa-lib.dev
+            glib gtk3 libsoup_3 webkitgtk_4_1 xdotool
+            xorg.libX11 xorg.libXcursor xorg.libXrandr xorg.libXi xorg.libxcb
+            libxkbcommon wayland libGL vulkan-loader
+          ])
+          ++ lib.optionals pkgs.stdenv.isDarwin (with pkgs; [
+            apple-sdk_15
+            libiconv
+          ]);
+
+          nativeBuildInputs = with pkgs; [
+            pkg-config
+            rustPlatform.bindgenHook
+            dioxus-cli
+            wasm-bindgen-cli
+            tailwindcss_4
+          ];
+
+          # Common args for all crane builds
+          commonArgs = {
+            inherit src buildInputs nativeBuildInputs;
+            strictDeps = true;
+            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+            OPENSSL_DIR = "${pkgs.openssl.dev}";
+            OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
+            CC_wasm32_unknown_unknown = "${pkgs.llvmPackages_18.clang}/bin/clang";
+            AR_wasm32_unknown_unknown = "${pkgs.llvmPackages_18.bintools}/bin/llvm-ar";
+          };
+
+          # Build workspace dependencies (cached)
+          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
+          # Library path for runtime
+          libPath = lib.makeLibraryPath (with pkgs;
+            [ fontconfig freetype openssl ]
+            ++ lib.optionals pkgs.stdenv.isLinux [
+              alsa-lib libGL vulkan-loader gtk3 glib
+              xorg.libX11 xorg.libxcb libxkbcommon wayland
+              webkitgtk_4_1 libsoup_3
+            ]
+          );
+
+        in {
+          _module.args.pkgs = import inputs.nixpkgs {
+            inherit system;
+            overlays = [ inputs.rust-overlay.overlays.default ];
+          };
+
+          formatter = pkgs.nixfmt-rfc-style;
+
+          # ============================================================
+          # Packages
+          # ============================================================
+          packages = {
+            deps = cargoArtifacts;
+
+            # Main host binary
+            fasttrackstudio = craneLib.buildPackage (commonArgs // {
+              pname = "fasttrackstudio";
+              version = rev;
+              inherit cargoArtifacts;
+              cargoExtraArgs = "-p fasttrackstudio";
+              doCheck = false;
+            });
+
+            # FTS Control Web App (WASM)
+            fts-control-web = craneLib.buildPackage (commonArgs // {
+              pname = "fts-control-web";
+              version = rev;
+              inherit cargoArtifacts;
+              buildPhaseCargoCommand = ''
+                cd apps/fts-control/web
+                dx build --release --platform web
+              '';
+              installPhaseCommand = ''
+                mkdir -p $out/www
+                cp -r apps/fts-control/web/target/dx/fts-control-web/release/web/* $out/www/
+              '';
+              doCheck = false;
+            });
+
+            # DAW Standalone cell
+            daw-standalone = craneLib.buildPackage (commonArgs // {
+              pname = "daw-standalone";
+              version = rev;
+              inherit cargoArtifacts;
+              cargoExtraArgs = "-p daw-standalone";
+              doCheck = false;
+            });
+
+            # Session cell
+            session = craneLib.buildPackage (commonArgs // {
+              pname = "session";
+              version = rev;
+              inherit cargoArtifacts;
+              cargoExtraArgs = "-p session";
+              doCheck = false;
+            });
+
+            # Gateway WebSocket cell
+            gateway-ws = craneLib.buildPackage (commonArgs // {
+              pname = "gateway-ws";
+              version = rev;
+              inherit cargoArtifacts;
+              cargoExtraArgs = "-p gateway-ws";
+              doCheck = false;
+            });
+
+            default = self'.packages.fasttrackstudio;
+          };
+
+          # ============================================================
+          # Checks
+          # ============================================================
+          checks = {
+            clippy = craneLib.cargoClippy (commonArgs // {
+              inherit cargoArtifacts;
+              cargoClippyExtraArgs = "--all-targets -- --deny warnings";
+            });
+
+            fmt = craneLib.cargoFmt { inherit src; };
+
+            tests = craneLib.cargoNextest (commonArgs // {
+              inherit cargoArtifacts;
+              partitions = 1;
+              partitionType = "count";
+            });
+          };
+
+          # ============================================================
+          # Dev Shell
+          # ============================================================
+          devShells.default = pkgs.mkShell {
+            name = "fasttrackstudio-dev";
+            inherit buildInputs nativeBuildInputs;
+
+            packages = with pkgs; [
+              rustToolchain
+              dioxus-cli
+              wasm-bindgen-cli
+              tailwindcss_4
+              cargo-watch
+              cargo-nextest
+              bacon
+              nodejs_22  # For Playwright tests
+            ];
+
+            shellHook = ''
+              ${if pkgs.stdenv.isLinux then ''
+                export LD_LIBRARY_PATH="${libPath}:$LD_LIBRARY_PATH"
+                export XDG_DATA_DIRS="${pkgs.gsettings-desktop-schemas}/share/gsettings-schemas/${pkgs.gsettings-desktop-schemas.name}:${pkgs.gtk3}/share/gsettings-schemas/${pkgs.gtk3.name}:$XDG_DATA_DIRS"
+              '' else ''
+                export DYLD_LIBRARY_PATH="${libPath}:$DYLD_LIBRARY_PATH"
+              ''}
+              export CC_wasm32_unknown_unknown="${pkgs.llvmPackages_18.clang}/bin/clang"
+              export AR_wasm32_unknown_unknown="${pkgs.llvmPackages_18.bintools}/bin/llvm-ar"
+              export RUST_SRC_PATH="${rustToolchain}/lib/rustlib/src/rust/library"
+              [ -f .env ] && { set -a; source .env; set +a; }
+              echo "FastTrackStudio dev environment (${system})"
+              echo "  - Rust: $(rustc --version)"
+              echo "  - dx: $(dx --version)"
+              echo "  - wasm-bindgen: $(wasm-bindgen --version)"
+            '';
+
+            LIBCLANG_PATH = "${pkgs.llvmPackages.libclang.lib}/lib";
+            OPENSSL_DIR = "${pkgs.openssl.dev}";
+            OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
+          };
+        };
+    };
+}
