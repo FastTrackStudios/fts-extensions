@@ -1,4 +1,4 @@
-# Justfile - Convenient commands for roam-test
+# Justfile - Convenient commands for FastTrackStudio
 # Install just: cargo install just
 # Run commands: just <recipe-name>
 
