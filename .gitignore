@@ -17,6 +17,7 @@ obsidian-plugin/js/
 
 # IDE
 .cargo/
+.claude/worktrees/
 .config/
 !.config/
 .config/*
