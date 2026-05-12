@@ -117,6 +117,7 @@
           sqlite # introspect the dev sqlite DB
           sea-orm-cli # migrations CLI
           wasm-pack # alternative wasm test runner
+          git-cliff # CHANGELOG.md from conventional commits
           pkg-config
           openssl
           curl

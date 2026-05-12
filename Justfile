@@ -103,6 +103,20 @@ tracey-validate:
 tracey-status:
     tracey query status
 
+# ── Releases / changelog ──────────────────────────────────────────────
+
+# Regenerate CHANGELOG.md from conventional commits.
+changelog:
+    git cliff -o CHANGELOG.md
+
+# Preview release notes for the next bump (no file write).
+changelog-preview:
+    git cliff --unreleased
+
+# Install git hooks (pre-commit fmt + tracey, pre-push clippy + nextest).
+install-hooks:
+    ./hooks/install.sh
+
 # Format all Rust files in the workspace + target-cfg crates.
 fmt:
     cargo fmt --all
