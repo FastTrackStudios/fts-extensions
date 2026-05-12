@@ -79,12 +79,13 @@ cli *args:
 # ── Docs ──────────────────────────────────────────────────────────────
 
 # Serve the dodeca docs site locally with live reload.
+# Reads .config/dodeca.styx for paths; run from the repo root.
 docs:
-    cargo xtask docs serve
+    ddc serve
 
 # Build the dodeca docs site for production.
 docs-build:
-    cargo xtask docs build
+    ddc build
 
 # Sync docs/content/ → the Forgejo wiki repo.
 sync-wiki:

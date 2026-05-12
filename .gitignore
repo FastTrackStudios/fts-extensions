@@ -9,3 +9,5 @@ result-*
 .envrc.local
 node_modules/
 dist/
+docs/public/
+.cache
