@@ -97,17 +97,11 @@ sync-wiki-dry-run:
 
 # Validate spec ↔ impl ↔ verify links. Fails on unmapped rules.
 tracey-validate:
-    tracey query validate --deny warnings
+    cargo xtask tracey-validate
 
 # Coverage overview (what's tested, what isn't).
 tracey-status:
     tracey query status
-
-# ── Setup ─────────────────────────────────────────────────────────────
-
-# Install the third-party CLIs the workflow uses (ddc, tracey).
-install-tools:
-    cargo xtask install-tools
 
 # Format all Rust files in the workspace + target-cfg crates.
 fmt:
