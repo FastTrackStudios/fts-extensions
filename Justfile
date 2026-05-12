@@ -1,17 +1,30 @@
 # architect dev recipes
 #
-# Run from the repo root inside the Dioxus dev shell:
+# Run from the repo root inside the Nix dev shell:
 #   nix develop -c just <recipe>
+#
+# Most recipes delegate to `cargo xtask`, which owns the actual logic in
+# Rust (see xtask/src/main.rs). Anything that needs to outlive the
+# server process (the wasm e2e dance) still lives here as a shell
+# recipe — xtask shells out to these.
 
-# Default: type-check the whole workspace + UI crates.
+# Default: full check across workspace + target-cfg crates.
 default: check
 
-# Type-check workspace (server, db, proto) + the UI crates.
+# Type-check workspace + the target-cfg-only crates.
 check:
-    cargo check --workspace
+    cargo xtask check
     cd apps/app/ui && cargo check
     cd apps/app/web && cargo check --target wasm32-unknown-unknown
     cd apps/app/desktop && cargo check
+
+# nextest with the default profile.
+test:
+    cargo xtask test
+
+# Workspace + clippy + fmt --check + nextest CI profile.
+ci:
+    cargo xtask ci
 
 # Build + run the migration binary.
 migrate:
@@ -21,16 +34,15 @@ migrate:
 server:
     cargo run -p app-server
 
-# Run the wasm browser integration tests against a server.
-# Start `just server` in another terminal first.
+# Run the wasm browser integration tests against an already-running server.
 test-wasm:
     cd features/example/tests/web && cargo test --target wasm32-unknown-unknown --release
 
-# Run server + wasm tests together with the default (db) backend.
+# Browser e2e against the default (sqlite) backend.
 test-e2e: (_e2e "")
 
-# Same e2e against the in-memory backend. Proves the contract is
-# truly backend-agnostic — the wasm tests don't change.
+# Same e2e against the in-memory backend — proves the contract is
+# backend-agnostic (wasm tests don't change).
 test-e2e-memory: (_e2e "--no-default-features --features backend-memory")
 
 # Internal: build + run server with given cargo features, drive wasm tests.
@@ -56,27 +68,48 @@ web:
 desktop:
     cd apps/app/desktop && dx serve --desktop
 
+# ── CLI client ─────────────────────────────────────────────────────────
+
+# Invoke the `app` CLI client. Pass subcommand + args after `--`.
+#   just cli -- list
+#   just cli -- create --name foo
+cli *args:
+    cargo run -p app-cli -- {{args}}
+
 # ── Docs ──────────────────────────────────────────────────────────────
 
 # Serve the dodeca docs site locally with live reload.
-# Requires `ddc` on PATH — install with:
-#   curl --proto '=https' --tlsv1.2 -LsSf \
-#     https://github.com/bearcove/dodeca/releases/latest/download/dodeca-installer.sh | sh
 docs:
-    cd docs && ddc serve
+    cargo xtask docs serve
 
 # Build the dodeca docs site for production.
 docs-build:
-    cd docs && ddc build
+    cargo xtask docs build
 
-# Sync docs/content/ → the Forgejo wiki repo. Dry-run first to preview.
+# Sync docs/content/ → the Forgejo wiki repo.
 sync-wiki:
-    ./scripts/sync-wiki.sh
+    cargo xtask wiki sync
 
 sync-wiki-dry-run:
-    ./scripts/sync-wiki.sh --dry-run
+    cargo xtask wiki sync --dry-run
 
-# Format all Rust files in the workspace + UI crates.
+# ── Tracey ────────────────────────────────────────────────────────────
+
+# Validate spec ↔ impl ↔ verify links. Fails on unmapped rules.
+tracey-validate:
+    tracey query validate --deny warnings
+
+# Coverage overview (what's tested, what isn't).
+tracey-status:
+    tracey query status
+
+# ── Setup ─────────────────────────────────────────────────────────────
+
+# Install the third-party CLIs the workflow uses (ddc, tracey).
+install-tools:
+    cargo xtask install-tools
+
+# Format all Rust files in the workspace + target-cfg crates.
 fmt:
     cargo fmt --all
     cd apps/app/ui && cargo fmt

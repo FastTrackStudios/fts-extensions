@@ -1,0 +1,10 @@
+# `cargo xtask <command>` is the entry point for build / test / docs /
+# wiki orchestration. Implementation lives in `xtask/`.
+
+[alias]
+xtask = "run --package xtask --release --"
+
+# Workspace tools use git CLI for fetches so credentials/SSH work the
+# same way `git` does outside cargo.
+[net]
+git-fetch-with-cli = true
