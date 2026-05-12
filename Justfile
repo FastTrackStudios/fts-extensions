@@ -21,10 +21,13 @@ task *args:
 # - Binds 0.0.0.0 so the starcommand nginx reverse proxy reaches it via
 #   the 10G LAN (10.10.10.10); port 8765 matches the upstream the
 #   task-dev nginx vhost forwards to.
+# - `--wasm-split` + `--features wasm-split` enable route-level bundle
+#   splitting so the initial wasm payload only contains the visited
+#   route's code. Each Route variant becomes its own lazy-loaded chunk.
 # - When this is running you can visit task-dev.starcommand.live from
 #   any device. When it's not, nginx serves a friendly offline page.
 task-web-dev:
-    nix develop .#ui --command bash -c 'cd apps/web && dx serve --web --addr 0.0.0.0 --port 8765'
+    nix develop .#ui --command bash -c 'cd apps/web && dx serve --web --addr 0.0.0.0 --port 8765 --wasm-split --features wasm-split'
 
 # ── Build & Test ─────────────────────────────────────────────────────────
 
