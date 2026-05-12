@@ -100,6 +100,34 @@
           };
         };
 
+        capn = pkgs.stdenv.mkDerivation rec {
+          pname = "capn";
+          version = "1.4.0";
+          # Release tarball is still named "captain-*" (legacy crate name)
+          # but capn 1.4 ships both `capn` and `captain` invocation modes
+          # off the same binary.
+          src = pkgs.fetchurl {
+            url = "https://github.com/bearcove/capn/releases/download/v${version}/captain-${bearcoveTarget}.tar.xz";
+            hash = "sha256-FUmHA9t9z9M6GsP12I+g3YEhbzLlPWgtrxd0AIO/3ak=";
+          };
+          nativeBuildInputs = [ pkgs.autoPatchelfHook ];
+          buildInputs = [
+            pkgs.stdenv.cc.cc.lib
+            pkgs.openssl
+          ];
+          installPhase = ''
+            mkdir -p $out/bin
+            install -m755 captain $out/bin/capn
+            ln -s capn $out/bin/captain
+          '';
+          meta = {
+            description = "Pre-commit + pre-push automation for Rust workspaces (bearcove)";
+            homepage = "https://github.com/bearcove/capn";
+            license = pkgs.lib.licenses.mit;
+            platforms = pkgs.lib.platforms.unix;
+          };
+        };
+
         # Browser + driver for `wasm-bindgen-test-runner`. Pinned via
         # nixpkgs so a fresh checkout doesn't need a global install.
         wasmTestDeps = [
@@ -123,6 +151,7 @@
           curl
           ddc
           tracey
+          capn
         ];
 
         # Base shell from dioxus-flake — gives us dx + cargo + wasm32 +
@@ -133,7 +162,7 @@
       {
         # Expose the tool packages directly so consumers can pin them.
         packages = {
-          inherit ddc tracey;
+          inherit ddc tracey capn;
         };
 
         devShells = {
@@ -143,10 +172,10 @@
 
             shellHook = ''
               # Prepend the pinned tool versions so any pre-existing
-              # `~/.cargo/bin/{ddc,tracey}` install from before this
+              # `~/.cargo/bin/{ddc,tracey,capn}` install from before this
               # shell existed doesn't shadow the version the flake
               # pins.
-              export PATH="${ddc}/bin:${tracey}/bin:$PATH"
+              export PATH="${ddc}/bin:${tracey}/bin:${capn}/bin:$PATH"
 
               # Auto-wire `cargo test --target wasm32-unknown-unknown`:
               # cargo invokes wasm-bindgen-test-runner (from the dioxus

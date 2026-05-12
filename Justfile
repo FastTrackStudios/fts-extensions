@@ -113,9 +113,17 @@ changelog:
 changelog-preview:
     git cliff --unreleased
 
-# Install git hooks (pre-commit fmt + tracey, pre-push clippy + nextest).
+# Install git hooks (capn pre-commit + pre-push + tracey).
 install-hooks:
     ./hooks/install.sh
+
+# Run capn pre-commit checks manually (without committing).
+capn-precommit:
+    capn
+
+# Run capn pre-push checks manually (without pushing).
+capn-prepush:
+    capn pre-push
 
 # Format all Rust files in the workspace + target-cfg crates.
 fmt:
