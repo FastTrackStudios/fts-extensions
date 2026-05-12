@@ -15,14 +15,16 @@ task *args:
 # Run the Dioxus dev server for apps/web on a fixed port + host so the
 # starcommand task-dev.starcommand.live tunnel reaches it.
 #
-# - Binds 0.0.0.0 so a remote reverse-proxy (starcommand nginx via
-#   Tailscale) can connect; port 8765 matches the upstream the
+# - Enters the `.#ui` dev shell (re-exports dioxus-flake's default shell)
+#   so dx, rustup with the wasm32-unknown-unknown target, and the rest
+#   of the Dioxus toolchain are on PATH.
+# - Binds 0.0.0.0 so the starcommand nginx reverse proxy reaches it via
+#   the 10G LAN (10.10.10.10); port 8765 matches the upstream the
 #   task-dev nginx vhost forwards to.
 # - When this is running you can visit task-dev.starcommand.live from
-#   any device. When it's not, the URL returns the friendly 502 page
-#   from starcommand nginx.
+#   any device. When it's not, nginx serves a friendly offline page.
 task-web-dev:
-    cd apps/web && dx serve --web --addr 0.0.0.0 --port 8765
+    nix develop .#ui --command bash -c 'cd apps/web && dx serve --web --addr 0.0.0.0 --port 8765'
 
 # ── Build & Test ─────────────────────────────────────────────────────────
 
