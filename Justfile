@@ -104,6 +104,14 @@ tracey-validate:
 tracey-status:
     tracey query status
 
+# ── Scaffolding ───────────────────────────────────────────────────────
+
+# Scaffold a new feature crate family at features/<name>/. Drops in
+# proto + memory backend + facade + native tests + spec stub, wires
+# everything into Cargo.toml + .config/tracey/config.styx.
+scaffold-feature name:
+    cargo run -q -p architect-cli -- feature new {{name}}
+
 # ── Releases / changelog ──────────────────────────────────────────────
 
 # Regenerate CHANGELOG.md from conventional commits.
