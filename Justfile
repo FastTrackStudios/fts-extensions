@@ -55,6 +55,48 @@ sync-demo-server:
     SYNC_DEMO_BIND="0.0.0.0:9090" \
     cargo run --release -p sync-demo
 
+# ── Lint / format / CI ───────────────────────────────────────────────────
+
+# rustfmt over the workspace + the excluded UI crates.
+fmt:
+    cargo fmt --all
+    cd apps/web && cargo fmt
+    cd crates/task-ui && cargo fmt
+
+# Clippy over the whole workspace including tests/benches.
+clippy:
+    cargo clippy --workspace --all-targets -- -D warnings
+
+# Full CI gate — check + fmt --check + clippy + tests.
+ci:
+    cargo fmt --all -- --check
+    cargo clippy --workspace --all-targets -- -D warnings
+    cargo nextest run --workspace --profile ci
+
+# ── Git hooks (capn) ─────────────────────────────────────────────────────
+
+# Install the capn pre-commit + pre-push hooks. Run once per clone.
+install-hooks:
+    ./hooks/install.sh
+
+# Run capn pre-commit checks manually (without committing).
+capn-precommit:
+    capn
+
+# Run capn pre-push checks manually (without pushing).
+capn-prepush:
+    capn pre-push
+
+# ── Releases / changelog ─────────────────────────────────────────────────
+
+# Regenerate CHANGELOG.md from conventional commits.
+changelog:
+    git cliff -o CHANGELOG.md
+
+# Preview release notes for the next bump (no file write).
+changelog-preview:
+    git cliff --unreleased
+
 # ── Aliases ──────────────────────────────────────────────────────────────
 
 alias c := check

@@ -13,11 +13,12 @@
     crane.url = "github:ipetkov/crane";
 
     # Shared Dioxus toolchain (web/desktop/mobile/native) — re-exposed
-    # below as `devShells.ui` and `devShells.mobile`.
-    # Use the pushed fork as a real git input so flake eval/builds don't
-    # depend on a local checkout path.
+    # below as `devShells.ui` and `devShells.mobile`. Pointed at the
+    # local checkout temporarily so dx CLI bumps land without a fork
+    # push round-trip. Switch back to `github:FastTrackStudios/Dioxus-Flake`
+    # once those changes are upstreamed.
     dioxus-flake = {
-      url = "github:FastTrackStudios/Dioxus-Flake";
+      url = "path:/home/cody/Development/Dioxus/dioxus-flake";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-overlay.follows = "rust-overlay";
       inputs.crane.follows = "crane";

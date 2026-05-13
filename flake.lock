@@ -21,6 +21,7 @@
           "crane"
         ],
         "flake-parts": "flake-parts",
+        "nix2container": "nix2container",
         "nixpkgs": [
           "nixpkgs"
         ],
@@ -29,17 +30,14 @@
         ]
       },
       "locked": {
-        "lastModified": 1777446465,
-        "narHash": "sha256-fvE6FsMwQbp6RpZgNCRwHfwFOeaNIzxylu9eC2EEi0w=",
-        "owner": "FastTrackStudios",
-        "repo": "Dioxus-Flake",
-        "rev": "c9396a14741351de9261afd591f44ccdf6bd470e",
-        "type": "github"
+        "lastModified": 1778645658,
+        "narHash": "sha256-gB8UHxoXaiQJOMy68YwHZgQKNuLhbbo4SZx6esmFp84=",
+        "path": "/home/cody/Development/Dioxus/dioxus-flake",
+        "type": "path"
       },
       "original": {
-        "owner": "FastTrackStudios",
-        "repo": "Dioxus-Flake",
-        "type": "github"
+        "path": "/home/cody/Development/Dioxus/dioxus-flake",
+        "type": "path"
       }
     },
     "flake-parts": {
@@ -75,6 +73,27 @@
       "original": {
         "owner": "hercules-ci",
         "repo": "flake-parts",
+        "type": "github"
+      }
+    },
+    "nix2container": {
+      "inputs": {
+        "nixpkgs": [
+          "dioxus-flake",
+          "nixpkgs"
+        ]
+      },
+      "locked": {
+        "lastModified": 1775487831,
+        "narHash": "sha256-2lguQpLPQaxpQCJjXhmEEAfabwsAhkP29Z7fgLzHARA=",
+        "owner": "nlewo",
+        "repo": "nix2container",
+        "rev": "76be9608a7f4d6c985d28b0e7be903ae2547df3e",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nlewo",
+        "repo": "nix2container",
         "type": "github"
       }
     },
