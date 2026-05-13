@@ -12,22 +12,47 @@ task *args:
 
 # ── Web (dev) ────────────────────────────────────────────────────────────
 
-# Run the Dioxus dev server for apps/web on a fixed port + host so the
-# starcommand task-dev.starcommand.live tunnel reaches it.
+# ── Run the app ──────────────────────────────────────────────────────────
 #
-# - Enters the `.#ui` dev shell (re-exports dioxus-flake's default shell)
-#   so dx, rustup with the wasm32-unknown-unknown target, and the rest
-#   of the Dioxus toolchain are on PATH.
-# - Binds 0.0.0.0 so the starcommand nginx reverse proxy reaches it via
-#   the 10G LAN (10.10.10.10); port 8765 matches the upstream the
-#   task-dev nginx vhost forwards to.
-# - `--wasm-split` + `--features wasm-split` enable route-level bundle
-#   splitting so the initial wasm payload only contains the visited
-#   route's code. Each Route variant becomes its own lazy-loaded chunk.
-# - When this is running you can visit task-dev.starcommand.live from
-#   any device. When it's not, nginx serves a friendly offline page.
-task-web-dev:
+# Three recipes for three terminals (or `just dev` to run them all):
+#   1. `just server` → task-server on :9090, sync relay
+#   2. `just web`    → Dioxus dev server on :8765
+#   3. `just db`     → run migrations + seed fake data
+#
+# Defaults to in-memory sqlite — `just server` and `just db` populate
+# their own process's database. For persistent data across runs, set
+# `SYNC_DEMO_DATABASE_URL=sqlite://./data.db?mode=rwc` first.
+
+# Dioxus dev server for apps/web on port 8765. Binds 0.0.0.0 so the
+# starcommand nginx reverse proxy reaches it via the 10G LAN.
+# `--wasm-split` enables route-level lazy chunks.
+web:
     nix develop .#ui --command bash -c 'cd apps/web && dx serve --web --addr 0.0.0.0 --port 8765 --wasm-split --features wasm-split'
+
+# Canonical server. Defaults: bind 0.0.0.0:9090, in-memory sqlite,
+# seed-on-startup. Override via TASK_SERVER_{BIND,SEED} env vars.
+server:
+    TASK_SERVER_SEED=1 TASK_SERVER_BIND="0.0.0.0:9090" \
+        cargo run --release -p task-server
+
+# Run migrations + seed the workspace doc with fake data. Standalone
+# CLI — useful for inspecting what `task-db` does without binding a
+# port. Since the default sqlite is in-memory the snapshot dies when
+# the process exits; set SYNC_DEMO_DATABASE_URL to a file URL for
+# state that survives.
+db:
+    cargo run --release -p task-db -- all
+
+# Launch server + web side-by-side; Ctrl+C kills both. Server lines
+# prefixed [srv], web lines [web].
+dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    trap 'kill 0' EXIT
+    TASK_SERVER_SEED=1 TASK_SERVER_BIND="0.0.0.0:9090" \
+        cargo run --release -p task-server 2>&1 | sed 's/^/[srv] /' &
+    just web 2>&1 | sed 's/^/[web] /' &
+    wait
 
 # ── Build & Test ─────────────────────────────────────────────────────────
 
@@ -43,43 +68,6 @@ build:
 
 test:
     nix develop .#ui --command cargo test --workspace
-
-# ── Run the app ──────────────────────────────────────────────────────────
-#
-# Two recipes for two terminals:
-#   1. `just server`        → task-server (Loro sync relay) on :9090,
-#                              in-memory sqlite, pre-seeded with
-#                              ~1700 fake rows across every feature.
-#   2. `just task-web-dev`  → Dioxus dev server on :8765.
-#                              Open localhost:8765/<feature-route>.
-#
-# Or use `just dev` to launch both in the background — Ctrl+C
-# stops both.
-
-# Canonical server. Defaults: bind 0.0.0.0:9090, in-memory sqlite,
-# seed-on-startup. Override via TASK_SERVER_{BIND,SEED} env vars or
-# SYNC_DEMO_DATABASE_URL=sqlite://./data.db?mode=rwc for a persistent
-# file.
-server:
-    TASK_SERVER_SEED=1 TASK_SERVER_BIND="0.0.0.0:9090" \
-        cargo run --release -p task-server
-
-# One-shot seed (no server). Useful to confirm `task-db` works
-# without keeping a process bound to the port — but since the
-# default sqlite is in-memory the snapshot dies with the process.
-seed:
-    cargo run --release -p task-db -- seed
-
-# Launch the server + the web dev server side by side. Ctrl+C
-# stops both. Server output is prefixed [srv], web output [web].
-dev:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    trap 'kill 0' EXIT
-    TASK_SERVER_SEED=1 TASK_SERVER_BIND="0.0.0.0:9090" \
-        cargo run --release -p task-server 2>&1 | sed 's/^/[srv] /' &
-    just task-web-dev 2>&1 | sed 's/^/[web] /' &
-    wait
 
 # ── Lint / format / CI ───────────────────────────────────────────────────
 
