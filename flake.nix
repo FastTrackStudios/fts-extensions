@@ -12,10 +12,12 @@
 
     crane.url = "github:ipetkov/crane";
 
-    # Shared Dioxus toolchain (web/desktop/mobile/native) — re-exposed
-    # below as `devShells.ui` and `devShells.mobile`. Pointed at the
-    # local checkout temporarily so dx CLI bumps land without a fork
-    # push round-trip. Switch back to `github:FastTrackStudios/Dioxus-Flake`
+    # Shared Dioxus toolchain (web/desktop/mobile/native). Its default
+    # dev shell is reused below as our `devShells.default` so capn
+    # pre-push and any other workspace-wide build sees the full Linux
+    # GTK + WebView dep list out of the box. Pointed at the local
+    # checkout temporarily so dx CLI bumps land without a fork push
+    # round-trip. Switch back to `github:FastTrackStudios/Dioxus-Flake`
     # once those changes are upstreamed.
     dioxus-flake = {
       url = "path:/home/cody/Development/Dioxus/dioxus-flake";
@@ -201,41 +203,16 @@
           };
 
           # ── Dev shell ───────────────────────────────────────────────────
-          devShells.default = pkgs.mkShell {
-            nativeBuildInputs = with pkgs; [
-              rustToolchain
-              cargo-watch
-              cargo-expand
-              wasm-pack
-              wasm-bindgen-cli
-              binaryen
-              nodejs_22
-              nodePackages.npm
-              pkg-config
-              openssl.dev
-            ];
-
-            RUST_SRC_PATH = "${rustToolchain}/lib/rustlib/src/rust/library";
-
-            shellHook = ''
-              echo ""
-              echo "  task dev shell"
-              echo "  ──────────────────────────────────────────────"
-              echo "  nix build .#task-server   Vox/CRDT service"
-              echo "  nix build .#task-cli      CLI tool"
-              echo "  nix build .#obsidian-wasm  Obsidian plugin WASM"
-              echo "  nix build .#task-webapp    Dioxus/Tailwind web bundle"
-              echo "  nix flake check           tests, clippy, fmt"
-              echo "  nix develop .#ui          Dioxus web/desktop dev shell"
-              echo "  nix develop .#mobile      Dioxus mobile (Android) dev shell"
-              echo ""
-            '';
-          };
-
-          # Re-export the shared Dioxus dev shells so app work uses the
-          # same toolchain as fts-ui / dioxus-flake without duplicating
-          # config here.
-          devShells.ui = inputs.dioxus-flake.devShells.${system}.default;
+          #
+          # One shell, everything in it. Reuses dioxus-flake's default
+          # shell so we get the full Linux GTK + WebView dep list
+          # (pango, webkitgtk_4_1, gtk3, libsoup_3, gst plugins, X11 /
+          # Wayland, libGL, …) needed by `apps/desktop` and capn
+          # pre-push — without duplicating the package list here.
+          # The mobile shell stays separate because the Android NDK
+          # toolchain it pulls in is heavy and only matters for that
+          # surface.
+          devShells.default = inputs.dioxus-flake.devShells.${system}.default;
           devShells.mobile = inputs.dioxus-flake.devShells.${system}.mobile;
         };
     };
