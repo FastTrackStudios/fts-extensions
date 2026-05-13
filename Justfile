@@ -43,6 +43,18 @@ build:
 test:
     cargo test --workspace
 
+# ── Loro sync demo ───────────────────────────────────────────────────────
+#
+# Two recipes; run them in two terminals:
+#   1. `just sync-demo-server` → standalone WebSocket relay on :9090,
+#      persistence in ./sync-demo.db.
+#   2. `just task-web-dev` (existing) → Dioxus dev server on :8765.
+#      Open http://localhost:8765/timer-demo in two browsers.
+sync-demo-server:
+    SYNC_DEMO_DATABASE_URL="sqlite://./sync-demo.db?mode=rwc" \
+    SYNC_DEMO_BIND="0.0.0.0:9090" \
+    cargo run --release -p sync-demo
+
 # ── Aliases ──────────────────────────────────────────────────────────────
 
 alias c := check
