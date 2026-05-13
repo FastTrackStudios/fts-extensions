@@ -47,14 +47,21 @@ test:
 # ── Loro sync demo ───────────────────────────────────────────────────────
 #
 # Two recipes; run them in two terminals:
-#   1. `just sync-demo-server` → standalone WebSocket relay on :9090,
-#      persistence in ./sync-demo.db.
+#   1. `just sync-demo-server` → relay on :9090, in-memory sqlite,
+#      pre-seeded with ~1700 fake rows across every feature so the
+#      UI has realistic content on first load.
 #   2. `just task-web-dev` (existing) → Dioxus dev server on :8765.
-#      Open http://localhost:8765/timer-demo in two browsers.
+#      Open http://localhost:8765/<feature-route> in two browsers.
 sync-demo-server:
-    SYNC_DEMO_DATABASE_URL="sqlite://./sync-demo.db?mode=rwc" \
-    SYNC_DEMO_BIND="0.0.0.0:9090" \
-    cargo run --release -p sync-demo
+    SYNC_DEMO_SEED=1 SYNC_DEMO_BIND="0.0.0.0:9090" \
+        cargo run --release -p sync-demo
+
+# Pre-seed only (without starting the server). Useful when you want
+# to inspect what `task-db` does without keeping a process bound to
+# the port. Defaults to in-memory sqlite so this is mostly a
+# debugging aid; the snapshot is gone when the process exits.
+seed:
+    cargo run --release -p task-db -- seed
 
 # ── Lint / format / CI ───────────────────────────────────────────────────
 
