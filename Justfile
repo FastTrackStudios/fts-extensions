@@ -44,24 +44,42 @@ build:
 test:
     nix develop .#ui --command cargo test --workspace
 
-# ── Loro sync demo ───────────────────────────────────────────────────────
+# ── Run the app ──────────────────────────────────────────────────────────
 #
-# Two recipes; run them in two terminals:
-#   1. `just sync-demo-server` → relay on :9090, in-memory sqlite,
-#      pre-seeded with ~1700 fake rows across every feature so the
-#      UI has realistic content on first load.
-#   2. `just task-web-dev` (existing) → Dioxus dev server on :8765.
-#      Open http://localhost:8765/<feature-route> in two browsers.
-sync-demo-server:
-    SYNC_DEMO_SEED=1 SYNC_DEMO_BIND="0.0.0.0:9090" \
-        cargo run --release -p sync-demo
+# Two recipes for two terminals:
+#   1. `just server`        → task-server (Loro sync relay) on :9090,
+#                              in-memory sqlite, pre-seeded with
+#                              ~1700 fake rows across every feature.
+#   2. `just task-web-dev`  → Dioxus dev server on :8765.
+#                              Open localhost:8765/<feature-route>.
+#
+# Or use `just dev` to launch both in the background — Ctrl+C
+# stops both.
 
-# Pre-seed only (without starting the server). Useful when you want
-# to inspect what `task-db` does without keeping a process bound to
-# the port. Defaults to in-memory sqlite so this is mostly a
-# debugging aid; the snapshot is gone when the process exits.
+# Canonical server. Defaults: bind 0.0.0.0:9090, in-memory sqlite,
+# seed-on-startup. Override via TASK_SERVER_{BIND,SEED} env vars or
+# SYNC_DEMO_DATABASE_URL=sqlite://./data.db?mode=rwc for a persistent
+# file.
+server:
+    TASK_SERVER_SEED=1 TASK_SERVER_BIND="0.0.0.0:9090" \
+        cargo run --release -p task-server
+
+# One-shot seed (no server). Useful to confirm `task-db` works
+# without keeping a process bound to the port — but since the
+# default sqlite is in-memory the snapshot dies with the process.
 seed:
     cargo run --release -p task-db -- seed
+
+# Launch the server + the web dev server side by side. Ctrl+C
+# stops both. Server output is prefixed [srv], web output [web].
+dev:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    trap 'kill 0' EXIT
+    TASK_SERVER_SEED=1 TASK_SERVER_BIND="0.0.0.0:9090" \
+        cargo run --release -p task-server 2>&1 | sed 's/^/[srv] /' &
+    just task-web-dev 2>&1 | sed 's/^/[web] /' &
+    wait
 
 # ── Lint / format / CI ───────────────────────────────────────────────────
 
