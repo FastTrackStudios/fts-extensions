@@ -74,6 +74,23 @@
         "type": "github"
       }
     },
+    "moire-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1773697243,
+        "narHash": "sha256-25vyXBqnoQd/7+e5taDMCmKA0k6UjdTmcuReAz4kQyg=",
+        "owner": "bearcove",
+        "repo": "moire",
+        "rev": "13eac79c1b128282dd792a611319d0a1016ad15d",
+        "type": "github"
+      },
+      "original": {
+        "owner": "bearcove",
+        "repo": "moire",
+        "rev": "13eac79c1b128282dd792a611319d0a1016ad15d",
+        "type": "github"
+      }
+    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1777954456,
@@ -109,6 +126,7 @@
       "inputs": {
         "dioxus-flake": "dioxus-flake",
         "flake-utils": "flake-utils",
+        "moire-src": "moire-src",
         "nixpkgs": "nixpkgs"
       }
     },

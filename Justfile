@@ -34,6 +34,47 @@ migrate:
 server:
     cargo run -p app-server
 
+# ── Diagnostics (moiré) ───────────────────────────────────────────────
+
+# Run the app-server with moiré instrumentation enabled. Connects to
+# the dashboard at $MOIRE_DASHBOARD (default 127.0.0.1:9119); start
+# `just moire-web` in another terminal first.
+server-with-diagnostics:
+    MOIRE_DASHBOARD="${MOIRE_DASHBOARD:-${MOIRE_DASHBOARD_DEFAULT:-127.0.0.1:9119}}" \
+        cargo run -p app-server --features diagnostics
+
+# Install moire-web into $CARGO_HOME/bin (typically ~/.cargo/bin) from
+# the source rev the flake pinned via `inputs.moire-src`. cargo install
+# builds in its own scratch dir, so the read-only nix store is fine —
+# nothing lands in this repo's target/. Idempotent: skips if the
+# binary's already on PATH.
+install-moire-web:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    if command -v moire-web >/dev/null 2>&1; then
+        echo "moire-web already on PATH at $(command -v moire-web)"
+        exit 0
+    fi
+    echo "Installing moire-web from $MOIRE_SOURCE ..."
+    cargo install --path "$MOIRE_SOURCE/crates/moire-web" --bin moire-web --locked
+
+# Launch the moiré dashboard. Installs on first run.
+moire-web: install-moire-web
+    moire-web
+
+# Run app-server + moire-web side-by-side. Server connects to the
+# dashboard automatically; open http://127.0.0.1:9119 to view.
+diagnostics: install-moire-web
+    #!/usr/bin/env bash
+    set -euo pipefail
+    : "${MOIRE_DASHBOARD:=${MOIRE_DASHBOARD_DEFAULT:-127.0.0.1:9119}}"
+    export MOIRE_DASHBOARD
+    moire-web &
+    DASHBOARD_PID=$!
+    trap "kill $DASHBOARD_PID 2>/dev/null || true" EXIT
+    sleep 1
+    cargo run -p app-server --features diagnostics
+
 # Run the wasm browser integration tests against an already-running server.
 test-wasm:
     cd features/example/tests/web && cargo test --target wasm32-unknown-unknown --release

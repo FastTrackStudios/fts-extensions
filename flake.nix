@@ -11,6 +11,15 @@
       url = "github:FastTrackStudios/Dioxus-Flake";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    # moiré — runtime graph instrumentation. Pinned to the same rev our
+    # workspace deps use so `just moire-web` builds the dashboard that
+    # matches our app's wire format. `flake = false` because moire
+    # doesn't ship a flake.nix; we treat it as a source tree.
+    moire-src = {
+      url = "github:bearcove/moire/13eac79c1b128282dd792a611319d0a1016ad15d";
+      flake = false;
+    };
   };
 
   outputs =
@@ -19,6 +28,7 @@
       nixpkgs,
       flake-utils,
       dioxus-flake,
+      moire-src,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -194,12 +204,19 @@
               echo "  CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=$CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER"
               echo "  DATABASE_URL=$DATABASE_URL"
               echo
+              # Path to the pinned moiré source tree — `just moire-web`
+              # uses this to build the dashboard from a known rev.
+              export MOIRE_SOURCE=${moire-src}
+              export MOIRE_DASHBOARD_DEFAULT=127.0.0.1:9119
+
               echo "  cargo xtask <cmd>     check / build / test / e2e / docs / wiki / ci"
               echo "  just server           run app-server"
               echo "  just test-e2e         server + browser tests (sqlite backend)"
               echo "  just test-e2e-memory  server + browser tests (in-memory backend)"
               echo "  just docs             dodeca serve"
               echo "  just tracey-validate  spec ↔ impl ↔ verify check"
+              echo "  just moire-web        start the moiré dashboard at $MOIRE_DASHBOARD_DEFAULT"
+              echo "  just diagnostics      app-server + dashboard side-by-side"
             '';
           };
 
