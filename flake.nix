@@ -12,13 +12,17 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
 
-    # moiré — runtime graph instrumentation. Pinned to the same rev our
-    # workspace deps use so `just moire-web` builds the dashboard that
-    # matches our app's wire format. `flake = false` because moire
-    # doesn't ship a flake.nix; we treat it as a source tree.
-    moire-src = {
-      url = "github:bearcove/moire/13eac79c1b128282dd792a611319d0a1016ad15d";
-      flake = false;
+    # moiré — runtime graph instrumentation. Our fork at
+    # codywright/moire layers two things on top of upstream
+    # bearcove/moire main:
+    #   * forge's `tolerate system frame-pointer termination` patch
+    #     (needed on pre-25.11 NixOS where glibc lacks frame pointers)
+    #   * a flake.nix that builds `moire-web` with its frontend bundled
+    # The architect workspace patches all bearcove/moire git deps to
+    # this fork so the runtime graph stays coherent across vox + us.
+    moire = {
+      url = "git+https://git.starcommand.live/codywright/moire";
+      inputs.nixpkgs.follows = "nixpkgs";
     };
   };
 
@@ -28,7 +32,7 @@
       nixpkgs,
       flake-utils,
       dioxus-flake,
-      moire-src,
+      moire,
     }:
     flake-utils.lib.eachDefaultSystem (
       system:
@@ -154,6 +158,7 @@
           just
           sqlite # introspect the dev sqlite DB
           sea-orm-cli # migrations CLI
+          pnpm # moire-web frontend build (via `cargo xtask install`)
           wasm-pack # alternative wasm test runner
           git-cliff # CHANGELOG.md from conventional commits
           pkg-config
@@ -173,6 +178,10 @@
         # Expose the tool packages directly so consumers can pin them.
         packages = {
           inherit ddc tracey capn;
+          # Pass-through so `nix run .#moire-web` and `nix build
+          # .#moire-web` work without users needing to know about our
+          # fork's flake URL.
+          moire-web = moire.packages.${system}.moire-web;
         };
 
         devShells = {
@@ -204,9 +213,10 @@
               echo "  CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER=$CARGO_TARGET_WASM32_UNKNOWN_UNKNOWN_RUNNER"
               echo "  DATABASE_URL=$DATABASE_URL"
               echo
-              # Path to the pinned moiré source tree — `just moire-web`
-              # uses this to build the dashboard from a known rev.
-              export MOIRE_SOURCE=${moire-src}
+              # Path to the pinned moiré dashboard binary. `just
+              # moire-web` invokes this directly — no cargo install,
+              # no per-user build cache, no writing to the repo.
+              export MOIRE_WEB_BIN=${moire.packages.${system}.moire-web}/bin/moire-web
               export MOIRE_DASHBOARD_DEFAULT=127.0.0.1:9119
 
               echo "  cargo xtask <cmd>     check / build / test / e2e / docs / wiki / ci"

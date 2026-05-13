@@ -43,39 +43,23 @@ server-with-diagnostics:
     MOIRE_DASHBOARD="${MOIRE_DASHBOARD:-${MOIRE_DASHBOARD_DEFAULT:-127.0.0.1:9119}}" \
         cargo run -p app-server --features diagnostics
 
-# Install moire-web into $CARGO_HOME/bin (typically ~/.cargo/bin) from
-# the source rev the flake pinned via `inputs.moire-src`. Build
-# artifacts go to ~/.cache/architect/ (user-scoped) because the source
-# lives in the read-only nix store; the final binary still lands in
-# $CARGO_HOME/bin like any other `cargo install`. Idempotent.
-install-moire-web:
-    #!/usr/bin/env bash
-    set -euo pipefail
-    if command -v moire-web >/dev/null 2>&1; then
-        echo "moire-web already on PATH at $(command -v moire-web)"
-        exit 0
-    fi
-    cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/architect"
-    target_dir="$cache_root/moire-web-target"
-    mkdir -p "$target_dir"
-    echo "Installing moire-web from $MOIRE_SOURCE"
-    echo "  build cache: $target_dir"
-    CARGO_TARGET_DIR="$target_dir" \
-        cargo install --path "$MOIRE_SOURCE/crates/moire-web" \
-            --bin moire-web --locked
-
-# Launch the moiré dashboard. Installs on first run.
-moire-web: install-moire-web
-    moire-web
+# Launch the moiré dashboard. $MOIRE_WEB_BIN is set by the flake's
+# shellHook to the nix-built binary (frontend bundled). No install
+# step, no per-user build cache, no cargo install.
+#
+# To rebuild the dashboard from a different moire rev, update the
+# `moire` input in flake.nix and `nix flake update moire`.
+moire-web:
+    "$MOIRE_WEB_BIN"
 
 # Run app-server + moire-web side-by-side. Server connects to the
 # dashboard automatically; open http://127.0.0.1:9119 to view.
-diagnostics: install-moire-web
+diagnostics:
     #!/usr/bin/env bash
     set -euo pipefail
     : "${MOIRE_DASHBOARD:=${MOIRE_DASHBOARD_DEFAULT:-127.0.0.1:9119}}"
     export MOIRE_DASHBOARD
-    moire-web &
+    "$MOIRE_WEB_BIN" &
     DASHBOARD_PID=$!
     trap "kill $DASHBOARD_PID 2>/dev/null || true" EXIT
     sleep 1
