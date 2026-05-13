@@ -31,17 +31,18 @@ task-web-dev:
 
 # ── Build & Test ─────────────────────────────────────────────────────────
 
-# Check all crates compile
+# Every workspace recipe runs inside `nix develop .#ui` so the
+# dioxus-desktop pango/gtk system libs + the wasm32 target are
+# available. Drops back to plain `cargo` for hosts that already
+# have the toolchain on PATH (CI runners, direnv users).
 check:
-    cargo check --workspace
+    nix develop .#ui --command cargo check --workspace
 
-# Build all crates
 build:
-    cargo build --workspace
+    nix develop .#ui --command cargo build --workspace
 
-# Run tests
 test:
-    cargo test --workspace
+    nix develop .#ui --command cargo test --workspace
 
 # ── Loro sync demo ───────────────────────────────────────────────────────
 #
@@ -57,21 +58,17 @@ sync-demo-server:
 
 # ── Lint / format / CI ───────────────────────────────────────────────────
 
-# rustfmt over the workspace + the excluded UI crates.
 fmt:
-    cargo fmt --all
-    cd apps/web && cargo fmt
-    cd crates/task-ui && cargo fmt
+    nix develop .#ui --command cargo fmt --all
 
-# Clippy over the whole workspace including tests/benches.
 clippy:
-    cargo clippy --workspace --all-targets -- -D warnings
+    nix develop .#ui --command cargo clippy --workspace --all-targets -- -D warnings
 
-# Full CI gate — check + fmt --check + clippy + tests.
 ci:
-    cargo fmt --all -- --check
-    cargo clippy --workspace --all-targets -- -D warnings
-    cargo nextest run --workspace --profile ci
+    nix develop .#ui --command bash -c '\
+        cargo fmt --all -- --check && \
+        cargo clippy --workspace --all-targets -- -D warnings && \
+        cargo nextest run --workspace --profile ci'
 
 # ── Git hooks (capn) ─────────────────────────────────────────────────────
 
