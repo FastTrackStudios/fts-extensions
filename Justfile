@@ -26,8 +26,11 @@ task *args:
 # Dioxus dev server for apps/web on port 8765. Binds 0.0.0.0 so the
 # starcommand nginx reverse proxy reaches it via the 10G LAN.
 # `--wasm-split` enables route-level lazy chunks.
+#
+# Assumes direnv/.envrc already loaded the `.#ui` dev shell. If you're
+# running outside direnv, prefix with `nix develop .#ui --command`.
 web:
-    nix develop .#ui --command bash -c 'cd apps/web && dx serve --web --addr 0.0.0.0 --port 8765'
+    cd apps/web && dx serve --web --addr 0.0.0.0 --port 8765
 
 # Canonical server. Defaults: bind 0.0.0.0:9090, in-memory sqlite,
 # seed-on-startup. Override via TASK_SERVER_{BIND,SEED} env vars.
@@ -56,32 +59,31 @@ dev:
 
 # ── Build & Test ─────────────────────────────────────────────────────────
 
-# Every workspace recipe runs inside `nix develop .#ui` so the
-# dioxus-desktop pango/gtk system libs + the wasm32 target are
-# available. Drops back to plain `cargo` for hosts that already
-# have the toolchain on PATH (CI runners, direnv users).
+# All recipes assume `.#ui` dev shell is already loaded (direnv handles
+# this automatically on `cd` into the repo). On hosts without direnv,
+# run `nix develop .#ui` once first, or prefix any recipe with
+# `nix develop .#ui --command just <recipe>`.
 check:
-    nix develop .#ui --command cargo check --workspace
+    cargo check --workspace
 
 build:
-    nix develop .#ui --command cargo build --workspace
+    cargo build --workspace
 
 test:
-    nix develop .#ui --command cargo test --workspace
+    cargo test --workspace
 
 # ── Lint / format / CI ───────────────────────────────────────────────────
 
 fmt:
-    nix develop .#ui --command cargo fmt --all
+    cargo fmt --all
 
 clippy:
-    nix develop .#ui --command cargo clippy --workspace --all-targets -- -D warnings
+    cargo clippy --workspace --all-targets -- -D warnings
 
 ci:
-    nix develop .#ui --command bash -c '\
-        cargo fmt --all -- --check && \
-        cargo clippy --workspace --all-targets -- -D warnings && \
-        cargo nextest run --workspace --profile ci'
+    cargo fmt --all -- --check
+    cargo clippy --workspace --all-targets -- -D warnings
+    cargo nextest run --workspace --profile ci
 
 # ── Git hooks (capn) ─────────────────────────────────────────────────────
 
