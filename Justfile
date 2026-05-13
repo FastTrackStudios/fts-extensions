@@ -44,10 +44,10 @@ server-with-diagnostics:
         cargo run -p app-server --features diagnostics
 
 # Install moire-web into $CARGO_HOME/bin (typically ~/.cargo/bin) from
-# the source rev the flake pinned via `inputs.moire-src`. cargo install
-# builds in its own scratch dir, so the read-only nix store is fine —
-# nothing lands in this repo's target/. Idempotent: skips if the
-# binary's already on PATH.
+# the source rev the flake pinned via `inputs.moire-src`. Build
+# artifacts go to ~/.cache/architect/ (user-scoped) because the source
+# lives in the read-only nix store; the final binary still lands in
+# $CARGO_HOME/bin like any other `cargo install`. Idempotent.
 install-moire-web:
     #!/usr/bin/env bash
     set -euo pipefail
@@ -55,8 +55,14 @@ install-moire-web:
         echo "moire-web already on PATH at $(command -v moire-web)"
         exit 0
     fi
-    echo "Installing moire-web from $MOIRE_SOURCE ..."
-    cargo install --path "$MOIRE_SOURCE/crates/moire-web" --bin moire-web --locked
+    cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/architect"
+    target_dir="$cache_root/moire-web-target"
+    mkdir -p "$target_dir"
+    echo "Installing moire-web from $MOIRE_SOURCE"
+    echo "  build cache: $target_dir"
+    CARGO_TARGET_DIR="$target_dir" \
+        cargo install --path "$MOIRE_SOURCE/crates/moire-web" \
+            --bin moire-web --locked
 
 # Launch the moiré dashboard. Installs on first run.
 moire-web: install-moire-web
