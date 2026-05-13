@@ -1,34 +1,28 @@
-
-# Build
+# Build artifacts
 target/
 result
+result-*
 .direnv/
+.cache
 
-# Dependencies
+# Node / vendored builds
 node_modules/
-obsidian-plugin/node_modules/
-obsidian-plugin/package-lock.json
+dist/
 
-# Generated
-obsidian-plugin/main.js
-obsidian-plugin/pkg/
-obsidian-plugin/generated/
-obsidian-plugin/js/
+# Databases / SQLite runtime files
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+.dolt/
 
-# IDE
-.cargo/
-.claude/worktrees/
-.config/
-!.config/
-.config/*
-!.config/capn/
-!.config/capn/config.styx
-
-# Secrets / local config
-.envrc
+# Local-only env overrides (`.envrc` itself is tracked — see architect's
+# pattern; `.envrc.local` is the per-machine escape hatch)
+.envrc.local
 .env
 
-# Beads / Dolt
-.dolt/
-*.db
+# Beads credentials
 .beads/.beads-credential-key
+
+# IDE / agent scratch
+.claude/worktrees/

@@ -13,11 +13,12 @@
     crane.url = "github:ipetkov/crane";
 
     # Shared Dioxus toolchain (web/desktop/mobile/native) — re-exposed
-    # below as `devShells.ui` and `devShells.mobile`.
-    # Use the pushed fork as a real git input so flake eval/builds don't
-    # depend on a local checkout path.
+    # below as `devShells.ui` and `devShells.mobile`. Pointed at the
+    # local checkout temporarily so dx CLI bumps land without a fork
+    # push round-trip. Switch back to `github:FastTrackStudios/Dioxus-Flake`
+    # once those changes are upstreamed.
     dioxus-flake = {
-      url = "github:FastTrackStudios/Dioxus-Flake";
+      url = "path:/home/cody/Development/Dioxus/dioxus-flake";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-overlay.follows = "rust-overlay";
       inputs.crane.follows = "crane";
@@ -64,6 +65,10 @@
           };
 
           cargoVendorDir = craneLib.vendorCargoDeps { src = taskSrc; };
+          taskWebCargoVendorDir = craneLib.vendorCargoDeps {
+            src = taskSrc;
+            cargoLock = ./apps/web/Cargo.lock;
+          };
 
           commonArgs = {
             src = taskSrc;
@@ -82,6 +87,21 @@
               hash = "sha256-Pcb5+dEaWK+SQJz73/3Si0kxEy8y8n21t+DETMdvKHc=";
             };
             cargoHash = "sha256-PztHuoWBh+wqOuSFTQxnnddKSSu0S1MBOgKy0szHQpI=";
+            nativeBuildInputs = [ pkgs.pkg-config ];
+            buildInputs = lib.optionals pkgs.stdenv.isLinux [ pkgs.openssl ]
+              ++ lib.optionals pkgs.stdenv.isDarwin
+                (with pkgs.darwin.apple_sdk.frameworks; [ Security CoreFoundation ]);
+            doCheck = false;
+          };
+
+          wasm-bindgen-cli-web = pkgs.rustPlatform.buildRustPackage rec {
+            pname = "wasm-bindgen-cli";
+            version = "0.2.121";
+            src = pkgs.fetchCrate {
+              inherit pname version;
+              hash = "sha256-ZOMgFNOcGkO66Jz/Z83eoIu+DIzo3Z/vq6Z5g6BDY/w=";
+            };
+            cargoHash = "sha256-DPdCDPTAPBrbqLUqnCwQu1dePs9lGg85JCJOCIr9qjU=";
             nativeBuildInputs = [ pkgs.pkg-config ];
             buildInputs = lib.optionals pkgs.stdenv.isLinux [ pkgs.openssl ]
               ++ lib.optionals pkgs.stdenv.isDarwin
@@ -137,11 +157,36 @@
             doCheck = false;
           });
 
+          task-webapp = craneLib.buildPackage (commonArgs // {
+            pname = "task-webapp";
+            version = "0.1.0";
+            cargoVendorDir = taskWebCargoVendorDir;
+            cargoArtifacts = null;
+            cargoExtraArgs = "--manifest-path apps/web/Cargo.toml";
+            nativeBuildInputs = commonArgs.nativeBuildInputs ++ (with pkgs; [
+              dioxus-cli
+              tailwindcss_4
+              wasm-bindgen-cli-web
+              binaryen
+            ]);
+            doNotPostBuildInstallCargoBinaries = true;
+            buildPhaseCargoCommand = ''
+              tailwindcss -i apps/web/tailwind.css -o apps/web/assets/tailwind.css
+              cd apps/web
+              dx build --release --platform web
+            '';
+            installPhaseCommand = ''
+              mkdir -p $out/www
+              cp -R target/dx/task-app-web/release/web/public/* $out/www/
+            '';
+            doCheck = false;
+          });
+
         in
         {
           packages = {
             default = task-cli;
-            inherit task-server task-cli xtask vault-core obsidian-wasm wasm-bindgen-cli;
+            inherit task-server task-cli task-webapp xtask vault-core obsidian-wasm wasm-bindgen-cli;
           };
 
           # ── Checks ──────────────────────────────────────────────────────
@@ -179,6 +224,7 @@
               echo "  nix build .#task-server   Vox/CRDT service"
               echo "  nix build .#task-cli      CLI tool"
               echo "  nix build .#obsidian-wasm  Obsidian plugin WASM"
+              echo "  nix build .#task-webapp    Dioxus/Tailwind web bundle"
               echo "  nix flake check           tests, clippy, fmt"
               echo "  nix develop .#ui          Dioxus web/desktop dev shell"
               echo "  nix develop .#mobile      Dioxus mobile (Android) dev shell"
