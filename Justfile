@@ -27,7 +27,7 @@ task *args:
 # starcommand nginx reverse proxy reaches it via the 10G LAN.
 # `--wasm-split` enables route-level lazy chunks.
 web:
-    nix develop .#ui --command bash -c 'cd apps/web && dx serve --web --addr 0.0.0.0 --port 8765 --wasm-split --features wasm-split'
+    nix develop .#ui --command bash -c 'cd apps/web && dx serve --web --addr 0.0.0.0 --port 8765'
 
 # Canonical server. Defaults: bind 0.0.0.0:9090, in-memory sqlite,
 # seed-on-startup. Override via TASK_SERVER_{BIND,SEED} env vars.
