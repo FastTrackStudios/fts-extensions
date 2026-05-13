@@ -11,3 +11,7 @@ node_modules/
 dist/
 docs/public/
 .cache
+
+# moire-web's SQLite ingest store — created when the dashboard runs.
+moire-web.sqlite
+moire-web.sqlite-*
