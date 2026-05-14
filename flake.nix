@@ -214,6 +214,35 @@
           # surface.
           devShells.default = inputs.dioxus-flake.devShells.${system}.default;
           devShells.mobile = inputs.dioxus-flake.devShells.${system}.mobile;
+
+          # ── Playwright shell ───────────────────────────────────────
+          #
+          # Browser-testing surface for `tests/playwright/`. Layers
+          # nodejs + a Nix-managed Chromium on top of the default
+          # shell so we still get cargo + dx for the
+          # `cargo run --release -p task-server` and `dx serve`
+          # webServer entries that `playwright.config.js` boots.
+          #
+          # NixOS-specific bit: the binary `npx playwright install`
+          # downloads is not patchelf'd for our libs, so we point
+          # Playwright at `playwright-driver.browsers` instead and
+          # disable its own download path. The JS-side
+          # `@playwright/test` version must roughly match the
+          # `playwright-driver` rev in nixpkgs — if they drift you'll
+          # see "Executable doesn't exist" / "browser version
+          # mismatch" errors; bump one to match the other.
+          devShells.playwright = pkgs.mkShell {
+            inputsFrom = [ inputs.dioxus-flake.devShells.${system}.default ];
+            packages = with pkgs; [
+              nodejs_22
+              playwright-driver.browsers
+            ];
+            shellHook = ''
+              export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+              export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
+              export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+            '';
+          };
         };
     };
 }

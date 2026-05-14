@@ -72,11 +72,18 @@ build:
 test:
     cargo test --workspace
 
-# Browser tests — Playwright. The first run installs the
-# Playwright Chromium binary (~150MB) and builds the release
-# artifacts; subsequent runs reuse both.
+# Browser tests — Playwright. Run inside the playwright dev
+# shell so Chromium + node come from Nix:
+#
+#   nix develop .#playwright --command just test-browser
+#
+# First run does an `npm install` for @playwright/test (no
+# browser download — the shell's `PLAYWRIGHT_BROWSERS_PATH`
+# points at nixpkgs's playwright-driver.browsers). Then runs
+# the suite, booting `task-server` (release) + `dx serve`
+# automatically via playwright.config.js's webServer block.
 test-browser:
-    cd tests/playwright && npm install --silent && npx playwright install --with-deps chromium && npx playwright test
+    cd tests/playwright && npm install --silent && npx playwright test
 
 # ── Lint / format / CI ───────────────────────────────────────────────────
 
