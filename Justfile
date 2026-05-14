@@ -72,6 +72,12 @@ build:
 test:
     cargo test --workspace
 
+# Browser tests — Playwright. The first run installs the
+# Playwright Chromium binary (~150MB) and builds the release
+# artifacts; subsequent runs reuse both.
+test-browser:
+    cd tests/playwright && npm install --silent && npx playwright install --with-deps chromium && npx playwright test
+
 # ── Lint / format / CI ───────────────────────────────────────────────────
 
 fmt:
