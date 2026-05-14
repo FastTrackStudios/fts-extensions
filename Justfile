@@ -82,8 +82,30 @@ test:
 # points at nixpkgs's playwright-driver.browsers). Then runs
 # the suite, booting `task-server` (release) + `dx serve`
 # automatically via playwright.config.js's webServer block.
+#
+# IMPORTANT: `dx serve` hot-patch DOES NOT pick up new RSX
+# attribute additions (id=, data-testid=) — only function-body
+# changes. If a UI selector test fails on "element not found"
+# after you added a new attribute, use `just test-browser-fresh`
+# below to force a clean dx-serve restart.
 test-browser:
     cd tests/playwright && npm install --silent && npx playwright test
+
+# Browser tests with a guaranteed-fresh `dx serve` + `task-server`.
+# Sets `CI=1` so playwright.config.js's `reuseExistingServer` is
+# false; any existing dev servers on :8765 / :9090 are killed
+# first so the new ones boot from scratch. Use this when:
+#   - you added a new RSX attribute (`id=`, `data-testid=`) and
+#     `just test-browser` finds the old DOM (hot-patch gotcha)
+#   - you're hunting a sync regression and want a known-clean
+#     server doc per test run
+# Takes ~3 minutes longer than `just test-browser` because it
+# rebuilds task-server (release) + the wasm bundle from cold.
+test-browser-fresh:
+    pkill -f "dx serve" || true
+    pkill -f "target/release/task-server" || true
+    sleep 1
+    CI=1 just test-browser
 
 # ── Lint / format / CI ───────────────────────────────────────────────────
 
