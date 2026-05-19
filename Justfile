@@ -32,6 +32,18 @@ task *args:
 web:
     cd apps/web && dx serve --web --addr 0.0.0.0 --port 8765
 
+# Native desktop window — the Logseq-like editor as a real app.
+# Faster iteration than the web build (no wasm pipeline) and gets
+# you OS chrome + file dialogs for free. Auto-rebuilds and
+# hot-reloads when sources change.
+desktop:
+    cd apps/desktop && dx serve --platform desktop
+
+# Same as `desktop` but in release mode — slower compile, snappier
+# runtime; use when smoke-testing a vault for actual editing.
+desktop-release:
+    cd apps/desktop && dx serve --platform desktop --release
+
 # Canonical server. Defaults: bind 0.0.0.0:9090, in-memory sqlite,
 # seed-on-startup. Override via TASK_SERVER_{BIND,SEED} env vars.
 server:
