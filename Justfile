@@ -32,16 +32,23 @@ task *args:
 web:
     cd apps/web && dx serve --web --addr 0.0.0.0 --port 8765
 
+# Regenerate apps/desktop/assets/tailwind.css from the source
+# `tailwind.css` input. Run after touching `@source` paths or the
+# `@layer components` block. `tailwindcss` comes from the nix
+# devshell — `direnv` already loaded it, no explicit nix call.
+desktop-css:
+    tailwindcss -i apps/desktop/tailwind.css -o apps/desktop/assets/tailwind.css
+
 # Native desktop window — the Logseq-like editor as a real app.
-# Faster iteration than the web build (no wasm pipeline) and gets
-# you OS chrome + file dialogs for free. Auto-rebuilds and
-# hot-reloads when sources change.
-desktop:
+# Regenerates tailwind first so any new utility classes in
+# touched sources actually exist in the bundled stylesheet, then
+# hot-reloads on subsequent source changes.
+desktop: desktop-css
     cd apps/desktop && dx serve --platform desktop
 
 # Same as `desktop` but in release mode — slower compile, snappier
 # runtime; use when smoke-testing a vault for actual editing.
-desktop-release:
+desktop-release: desktop-css
     cd apps/desktop && dx serve --platform desktop --release
 
 # Canonical server. Defaults: bind 0.0.0.0:9090, in-memory sqlite,
