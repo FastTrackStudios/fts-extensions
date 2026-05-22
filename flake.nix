@@ -204,16 +204,72 @@
 
           # ── Dev shell ───────────────────────────────────────────────────
           #
-          # One shell, everything in it. Reuses dioxus-flake's default
-          # shell so we get the full Linux GTK + WebView dep list
-          # (pango, webkitgtk_4_1, gtk3, libsoup_3, gst plugins, X11 /
-          # Wayland, libGL, …) needed by `apps/desktop` and capn
-          # pre-push — without duplicating the package list here.
+          # One shell, everything in it. Layers on top of dioxus-flake's
+          # default (full Linux GTK + WebView deps for `apps/desktop` +
+          # capn pre-push) plus the wasm C toolchain required by
+          # arborium-sysroot when building the editor for the browser.
+          #
+          # Why the unwrapped clang/llvm-bintools:
+          # - `arborium-sysroot`'s build.rs compiles a tiny wasm
+          #   sysroot through `cc::Build`. It needs a clang that
+          #   targets `wasm32-unknown-unknown` and an `llvm-ar` that
+          #   produces wasm archives.
+          # - nix's `cc-wrapper` injects host-only hardening flags
+          #   (notably `-fzero-call-used-regs=used-gpr`) that clang
+          #   rejects for wasm. The *-unwrapped variants skip that
+          #   wrapper. Same fix the editor's standalone flake used —
+          #   ported verbatim per upstream's note.
+          # - The CC_/AR_ env vars pin `cc::Build` to these binaries
+          #   for the wasm target only; native builds still go through
+          #   the wrapped gcc/clang.
           # The mobile shell stays separate because the Android NDK
           # toolchain it pulls in is heavy and only matters for that
           # surface.
-          devShells.default = inputs.dioxus-flake.devShells.${system}.default;
+          devShells.default = pkgs.mkShell {
+            inputsFrom = [ inputs.dioxus-flake.devShells.${system}.default ];
+            packages = with pkgs; [
+              llvmPackages.clang-unwrapped
+              llvmPackages.bintools-unwrapped
+            ];
+            shellHook = ''
+              export CC_wasm32_unknown_unknown=${pkgs.llvmPackages.clang-unwrapped}/bin/clang
+              export AR_wasm32_unknown_unknown=${pkgs.llvmPackages.bintools-unwrapped}/bin/llvm-ar
+            '';
+          };
           devShells.mobile = inputs.dioxus-flake.devShells.${system}.mobile;
+
+          # ── Playwright shell ───────────────────────────────────────
+          #
+          # Browser-testing surface used by `features/editor/tests/`
+          # (the editor playground spec) and any future
+          # `tests/playwright/` suites. Layers nodejs + pnpm + just +
+          # the Nix-managed Chromium on top of the default shell so
+          # we still get cargo + dx + the wasm C toolchain for
+          # `dx serve --package playground --platform web`, which is
+          # what `playwright.config.js`'s `webServer` boots.
+          #
+          # NixOS-specific bit: the binary `npx playwright install`
+          # downloads is not patchelf'd for our libs, so we point
+          # Playwright at `playwright-driver.browsers` instead and
+          # disable its own download path. The JS-side
+          # `@playwright/test` version must roughly match the
+          # `playwright-driver` rev in nixpkgs — if they drift you'll
+          # see "Executable doesn't exist" / "browser version
+          # mismatch" errors; bump one to match the other.
+          devShells.playwright = pkgs.mkShell {
+            inputsFrom = [ self'.devShells.default ];
+            packages = with pkgs; [
+              nodejs_22
+              pnpm
+              just
+              playwright-driver.browsers
+            ];
+            shellHook = ''
+              export PLAYWRIGHT_BROWSERS_PATH=${pkgs.playwright-driver.browsers}
+              export PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=true
+              export PLAYWRIGHT_SKIP_VALIDATE_HOST_REQUIREMENTS=true
+            '';
+          };
         };
     };
 }

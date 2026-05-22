@@ -21,8 +21,11 @@ dist/
 .envrc.local
 .env
 
-# Beads credentials
-.beads/.beads-credential-key
+# Local-only tool state — beads issue DB, wt worktree config,
+# tracey config — these are per-machine, never shared.
+.beads/
+.config/tracey/
+.config/wt.toml
 
 # IDE / agent scratch
 .claude/worktrees/
