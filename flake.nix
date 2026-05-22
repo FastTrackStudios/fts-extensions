@@ -230,10 +230,19 @@
             packages = with pkgs; [
               llvmPackages.clang-unwrapped
               llvmPackages.bintools-unwrapped
+              # `lance-encoding` / `lance-file` (the LanceDB
+              # crate stack that backs `wiki-search`'s
+              # `vector` feature) invokes `prost-build` to
+              # generate Rust from `.proto` schemas. Without
+              # `protoc` on PATH the build fails with
+              # `NotFound { kind: NotFound, error: "Could not
+              # find protoc" }`.
+              protobuf
             ];
             shellHook = ''
               export CC_wasm32_unknown_unknown=${pkgs.llvmPackages.clang-unwrapped}/bin/clang
               export AR_wasm32_unknown_unknown=${pkgs.llvmPackages.bintools-unwrapped}/bin/llvm-ar
+              export PROTOC=${pkgs.protobuf}/bin/protoc
             '';
           };
           devShells.mobile = inputs.dioxus-flake.devShells.${system}.mobile;
