@@ -5,12 +5,15 @@
     nixpkgs.follows = "dioxus-flake/nixpkgs";
     flake-utils.url = "github:numtide/flake-utils";
     rust-overlay.follows = "dioxus-flake/rust-overlay";
+    # Shared FTS hygiene hub — pinned capn/tracey + cargo xtask CI battery.
+    fts-repo.url = "git+https://git.starcommand.live/FastTrackStudios/fts-repo";
+    fts-repo.inputs.nixpkgs.follows = "nixpkgs";
   };
   nixConfig = {
     extra-trusted-public-keys = [ "fasttrackstudio.cachix.org-1:r7v7WXBeSZ7m5meL6w0wttnvsOltRvTpXeVNItcy9f4=" ];
     extra-substituters = [ "https://fasttrackstudio.cachix.org" ];
   };
-  outputs = { self, dioxus-flake, nixpkgs, flake-utils, rust-overlay, }:
+  outputs = { self, dioxus-flake, nixpkgs, flake-utils, rust-overlay, fts-repo, }:
     flake-utils.lib.eachSystem [ "x86_64-linux" "aarch64-linux" ] (system:
       let
         pkgs = import nixpkgs {
@@ -101,6 +104,20 @@ EOF
             echo "  fts-showcase-native    cd apps/native && dx serve --platform native"
             echo ""
           '';
+        };
+
+        # CI shell — `cargo xtask ci` gate. dioxus-flake supplies rust + the
+        # blitz/native build deps; layer on the shared hygiene tools.
+        devShells.ci = pkgs.mkShell {
+          inputsFrom = [ dioxus-flake.devShells.${system}.default ];
+          buildInputs = [
+            pkgs.cargo-nextest
+            pkgs.cargo-shear
+            pkgs.git-cliff
+            pkgs.just
+            fts-repo.packages.${system}.capn
+            fts-repo.packages.${system}.tracey
+          ];
         };
 
         devShells.mobile = pkgs.mkShell {
