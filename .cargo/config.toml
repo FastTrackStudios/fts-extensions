@@ -1,0 +1,2 @@
+[alias]
+xtask = "run --package fts-story-xtask --release --"
