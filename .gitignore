@@ -4,6 +4,9 @@
 *.pdb
 .DS_Store
 .direnv/
+# nix build output symlinks
+/result
+/result-*
 .env
 *.log
 *.swp
