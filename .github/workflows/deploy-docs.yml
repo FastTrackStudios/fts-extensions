@@ -1,5 +1,3 @@
-# Continuous deployment of the docsite to fly.io.
-#
 # GitHub-mirror copy of .forgejo/workflows/deploy-docs.yml (Forgejo reads
 # only .forgejo/workflows when that directory exists).
 #
@@ -27,23 +25,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The workspace manifest path-deps four sibling checkouts (Editor,
-      # architect, input_actions, daw) — cargo loads every workspace member's
-      # manifest even for a single -p build, so the siblings must exist at
-      # the same relative paths as in local dev.
-      - name: Clone sibling workspace repos
+      # The workspace path-deps four sibling checkouts, and Editor's crates
+      # path back into keyflow at ../FastTrackStudio/keyflow (the local disk
+      # layout). Cargo does NOT canonicalize symlinks — reaching the same
+      # crate via two paths is a package collision — so the build tree must
+      # genuinely live at <root>/FastTrackStudio/keyflow. Assembled layout:
+      #
+      #   <root>/Editor
+      #   <root>/architect
+      #   <root>/FastTrackStudio/{keyflow (build tree), input_actions, daw}
+      - name: Assemble workspace layout
         run: |
           set -euo pipefail
+          root="$(dirname "$(dirname "$PWD")")"
           clone() { rm -rf "$2" && git clone --depth 1 -b main "https://codeberg.org/FastTrackStudios/$1.git" "$2"; }
-          clone Editor        ../../Editor
-          clone architect     ../../architect
-          clone input_actions ../input_actions
-          clone daw           ../daw
-          # Editor's manifests reach back into keyflow via
-          # ../FastTrackStudio/keyflow (local disk layout, no 's') —
-          # bridge it to this checkout.
-          mkdir -p ../../FastTrackStudio
-          ln -sfn "$(pwd)" ../../FastTrackStudio/keyflow
+          clone Editor        "$root/Editor"
+          clone architect     "$root/architect"
+          mkdir -p "$root/FastTrackStudio"
+          clone input_actions "$root/FastTrackStudio/input_actions"
+          clone daw           "$root/FastTrackStudio/daw"
+          rm -rf "$root/FastTrackStudio/keyflow"
+          cp -a . "$root/FastTrackStudio/keyflow"
 
       - uses: cachix/install-nix-action@v31
         with:
@@ -64,14 +66,17 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            target
           key: docs-cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
           restore-keys: docs-cargo-${{ runner.os }}-
 
       - name: Build site
-        run: nix develop ./docs --command ./docs/build.sh
+        run: |
+          cd "$(dirname "$(dirname "$PWD")")/FastTrackStudio/keyflow"
+          nix develop ./docs --command ./docs/build.sh
 
       - name: Deploy to fly.io
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: nix develop ./docs --command sh -c "cd docs && fly deploy --remote-only"
+        run: |
+          cd "$(dirname "$(dirname "$PWD")")/FastTrackStudio/keyflow"
+          nix develop ./docs --command sh -c "cd docs && fly deploy --remote-only"
