@@ -1,0 +1,15 @@
+[alias]
+xtask = "run --package keyflow-xtask --release --"
+
+# Workspace tools (and patched git deps) use the git CLI so SSH / credentials
+# work the same way `git` does outside cargo.
+[net]
+git-fetch-with-cli = true
+
+# getrandom 0.3 (transitive via the editor/vox stack) needs its backend
+# selected explicitly on wasm. Paired with the `wasm_js` feature enabled in
+# examples/web-editor/Cargo.toml. `dx` sets the same cfg on its own builds;
+# declaring it here makes plain `cargo check --target wasm32-unknown-unknown`
+# agree. See docs.rs/getrandom/#webassembly-support.
+[target.wasm32-unknown-unknown]
+rustflags = ['--cfg', 'getrandom_backend="wasm_js"']
