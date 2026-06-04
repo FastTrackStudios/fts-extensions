@@ -1,8 +1,7 @@
 # Continuous deployment of the docsite to fly.io.
 #
-# Runs on GitHub Actions AND Forgejo/Codeberg Actions — Forgejo falls back to
-# .github/workflows when no .forgejo/workflows exists, and every action used
-# here (checkout, cache, install-nix) works on both.
+# GitHub-mirror copy of .forgejo/workflows/deploy-docs.yml (Forgejo reads
+# only .forgejo/workflows when that directory exists).
 #
 # Required secret (org-level): FLY_API_TOKEN — a scoped fly.io deploy token
 # for the keyflow-docs app (the env var name flyctl reads natively).
@@ -27,6 +26,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      # The workspace manifest path-deps four sibling checkouts (Editor,
+      # architect, input_actions, daw) — cargo loads every workspace member's
+      # manifest even for a single -p build, so the siblings must exist at
+      # the same relative paths as in local dev.
+      - name: Clone sibling workspace repos
+        run: |
+          set -euo pipefail
+          clone() { rm -rf "$2" && git clone --depth 1 "https://codeberg.org/FastTrackStudios/$1.git" "$2"; }
+          clone Editor        ../../Editor
+          clone architect     ../../architect
+          clone input_actions ../input_actions
+          clone daw           ../daw
 
       - uses: cachix/install-nix-action@v31
         with:
