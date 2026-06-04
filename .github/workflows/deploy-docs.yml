@@ -21,7 +21,8 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    # Codeberg hosted runner: 4 CPU / 8GB / 10-minute runtime cap.
+    runs-on: codeberg-medium
     steps:
       - uses: actions/checkout@v4
 
