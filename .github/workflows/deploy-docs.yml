@@ -25,28 +25,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # The workspace path-deps four sibling checkouts, and Editor's crates
-      # path back into keyflow at ../FastTrackStudio/keyflow (the local disk
-      # layout). Cargo does NOT canonicalize symlinks — reaching the same
-      # crate via two paths is a package collision — so the build tree must
-      # genuinely live at <root>/FastTrackStudio/keyflow. Assembled layout:
-      #
-      #   <root>/Editor
-      #   <root>/architect
-      #   <root>/FastTrackStudio/{keyflow (build tree), input_actions, daw}
-      - name: Assemble workspace layout
-        run: |
-          set -euo pipefail
-          root="$(dirname "$(dirname "$PWD")")"
-          clone() { rm -rf "$2" && git clone --depth 1 -b main "https://codeberg.org/FastTrackStudios/$1.git" "$2"; }
-          clone Editor        "$root/Editor"
-          clone architect     "$root/architect"
-          mkdir -p "$root/FastTrackStudio"
-          clone input_actions "$root/FastTrackStudio/input_actions"
-          clone daw           "$root/FastTrackStudio/daw"
-          rm -rf "$root/FastTrackStudio/keyflow"
-          cp -a . "$root/FastTrackStudio/keyflow"
-
       - uses: cachix/install-nix-action@v31
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
@@ -66,17 +44,14 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
+            target
           key: docs-cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
           restore-keys: docs-cargo-${{ runner.os }}-
 
       - name: Build site
-        run: |
-          cd "$(dirname "$(dirname "$PWD")")/FastTrackStudio/keyflow"
-          nix develop ./docs --command ./docs/build.sh
+        run: nix develop ./docs --command ./docs/build.sh
 
       - name: Deploy to fly.io
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: |
-          cd "$(dirname "$(dirname "$PWD")")/FastTrackStudio/keyflow"
-          nix develop ./docs --command sh -c "cd docs && fly deploy --remote-only"
+        run: nix develop ./docs --command sh -c "cd docs && fly deploy --remote-only"
