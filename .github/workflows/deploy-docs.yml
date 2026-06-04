@@ -21,8 +21,9 @@ on:
 
 jobs:
   deploy:
-    # Codeberg hosted runner: 4 CPU / 8GB / 10-minute runtime cap.
-    runs-on: codeberg-medium
+    # Self-hosted THEBATTLESHIP runner (docker mode, catthehacker ubuntu
+    # image): 3h timeout, local cache server, 8-job capacity.
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
