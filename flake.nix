@@ -18,10 +18,10 @@
     # (codywright/dioxus, pinned in Cargo.toml's `[patch.crates-io]`), plus
     # the GTK/WebView base deps. Same input Task + Editor use, so the whole
     # FTS stack shares one `dx` + wasm-bindgen. This is what gives the web
-    # editor "the right wasm-bindgen". Pointed at the local checkout; switch
-    # to `github:FastTrackStudios/Dioxus-Flake` for a clean clone.
+    # editor "the right wasm-bindgen". For local flake hacking, override
+    # with: nix develop --override-input dioxus-flake path:/home/cody/Development/Dioxus/dioxus-flake
     dioxus-flake = {
-      url = "path:/home/cody/Development/Dioxus/dioxus-flake";
+      url = "git+https://codeberg.org/FastTrackStudios/dioxus-flake";
       inputs.nixpkgs.follows = "nixpkgs";
       inputs.rust-overlay.follows = "rust-overlay";
     };
