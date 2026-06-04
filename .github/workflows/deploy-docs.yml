@@ -1,0 +1,57 @@
+# Continuous deployment of the docsite to fly.io.
+#
+# Runs on GitHub Actions AND Forgejo/Codeberg Actions — Forgejo falls back to
+# .github/workflows when no .forgejo/workflows exists, and every action used
+# here (checkout, cache, install-nix) works on both.
+#
+# Required repo secret: FLY_API_TOKEN — make it a scoped deploy token:
+#   fly tokens create deploy -a keyflow-docs
+name: deploy-docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - ".github/workflows/deploy-docs.yml"
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ddc (dodeca) ships prebuilt binaries — no nix package, no cargo build.
+      - name: Install dodeca
+        run: |
+          curl --proto '=https' --tlsv1.2 -LsSf \
+            https://bearcove-dist.s3.fr-par.scw.cloud/dodeca/install.sh | sh
+          # installer drops ddc + ddc-cell-* into ~/.cargo/bin (or ~/.local/bin)
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: docs-cargo-${{ runner.os }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: docs-cargo-${{ runner.os }}-
+
+      - name: Build site
+        run: nix develop ./docs --command ./docs/build.sh
+
+      - name: Deploy to fly.io
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: nix develop ./docs --command sh -c "cd docs && fly deploy --remote-only"
