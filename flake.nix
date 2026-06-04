@@ -150,6 +150,11 @@
             pkgs.cargo-shear
             pkgs.git-cliff
             pkgs.just
+            # Self-contained git: in containerized CI the host git's
+            # /usr/lib/git-core helpers ABI-clash with the nix glibc on the
+            # shell's library path (GLIBC_ABI_DT_X86_64_PLT) — cargo's git
+            # fetches must use nix git end-to-end.
+            pkgs.git
             fts-repo.packages.${system}.capn
             fts-repo.packages.${system}.tracey
           ] ++ fts-repo.lib.ftsUiBuildInputs pkgs;
