@@ -4,8 +4,8 @@
 # .github/workflows when no .forgejo/workflows exists, and every action used
 # here (checkout, cache, install-nix) works on both.
 #
-# Required repo secret: FLY_API_TOKEN — make it a scoped deploy token:
-#   fly tokens create deploy -a keyflow-docs
+# Required secret (org-level): FLY_DEPLOY_KEY — a scoped fly.io deploy token
+# for the keyflow-docs app. flyctl reads it via the FLY_API_TOKEN env var.
 name: deploy-docs
 
 on:
@@ -53,5 +53,5 @@ jobs:
 
       - name: Deploy to fly.io
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_KEY }}
         run: nix develop ./docs --command sh -c "cd docs && fly deploy --remote-only"
