@@ -34,7 +34,7 @@ jobs:
       - name: Clone sibling workspace repos
         run: |
           set -euo pipefail
-          clone() { rm -rf "$2" && git clone --depth 1 "https://codeberg.org/FastTrackStudios/$1.git" "$2"; }
+          clone() { rm -rf "$2" && git clone --depth 1 -b main "https://codeberg.org/FastTrackStudios/$1.git" "$2"; }
           clone Editor        ../../Editor
           clone architect     ../../architect
           clone input_actions ../input_actions
