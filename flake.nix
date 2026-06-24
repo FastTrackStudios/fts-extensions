@@ -74,6 +74,8 @@
             alsa-lib
             libjack2
             dbus
+            # PipeWire (libspa-sys) for FTS-EQ's live spectrum-analyzer capture.
+            pipewire
 
             # misc system libs commonly needed by GUI/audio crates
             zlib
@@ -106,6 +108,14 @@
             shellHook = pkgs.lib.optionalString isLinux ''
               # dlopened GUI/GPU libs (libGL, vulkan, xkbcommon, wayland, xcb-util…)
               export LD_LIBRARY_PATH="${pkgs.lib.makeLibraryPath linuxNativeLibs}:/run/opengl-driver/lib:''${LD_LIBRARY_PATH:-}"
+              # bindgen (libspa-sys for PipeWire) can't find clang's builtin / libc
+              # headers on Nix by default — feed it the cc wrapper's flags + the
+              # clang resource-dir includes.
+              export BINDGEN_EXTRA_CLANG_ARGS="$(< ${pkgs.stdenv.cc}/nix-support/libc-crt1-cflags) \
+                $(< ${pkgs.stdenv.cc}/nix-support/libc-cflags) \
+                $(< ${pkgs.stdenv.cc}/nix-support/cc-cflags) \
+                -idirafter ${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.lib.versions.major pkgs.llvmPackages.libclang.version}/include \
+                ''${BINDGEN_EXTRA_CLANG_ARGS:-}"
             '';
           };
         }
