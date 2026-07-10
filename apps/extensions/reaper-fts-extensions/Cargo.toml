@@ -51,7 +51,7 @@ architect.workspace = true
 # metadata, no REAPER deps) — split out so fts-cli's generated action
 # menu can depend on them without pulling in the full REAPER binding
 # stack this crate carries. See its own crate doc for why.
-fts-extensions-actions = { path = "../fts-extensions-actions" }
+fts-extensions-actions = { workspace = true }
 
 # FTS Launcher — search/workflow engine
 fts-launcher = { workspace = true, optional = true }
@@ -63,18 +63,14 @@ session = { workspace = true, optional = true }
 # mode bridge can call the per-mode visibility entry point without going
 # through the action registry.
 dynamic-template = { workspace = true, optional = true }
-# `default-features = false` disables `overlay-prewarm` so reaper-input
-# doesn't try to allocate wgpu/Vello surfaces during plugin_main, where
-# the REAPER host window isn't ready yet and surface creation OOMs.
-# Declared directly (not via `workspace = true`) because workspace
-# inheritance forbids overriding `default-features`. The path is the same
-# one the workspace's `[patch]` table redirects to.
-reaper-input = { path = "../../../input/crates/reaper-input", optional = true, default-features = false }
+# The workspace declaration carries `default-features = false`: it disables
+# `overlay-prewarm` so reaper-input doesn't try to allocate wgpu/Vello
+# surfaces during plugin_main, where the REAPER host window isn't ready
+# yet and surface creation OOMs.
+reaper-input = { workspace = true, optional = true }
 daw-synchronization = { workspace = true, optional = true }
-# Orchestral mirror pass (pure Rust, no Reaper deps). Consumed from the
-# published keyflow workspace on Codeberg — the crate is dependency-light
-# (musicxml/thiserror/zip only) so it can't split the shared dependency graph.
-keyflow-orchestra = { git = "https://codeberg.org/FastTrackStudios/keyflow.git", branch = "main", optional = true }
+# Orchestral mirror pass (pure Rust, no Reaper deps) — in-tree crate.
+keyflow-orchestra = { workspace = true, optional = true }
 
 # DAW API. `reaper-ui` pulls in the Dioxus panel rendering host and is gated
 # behind the `ui-dock` feature. `daw-extension-runtime` is a public sibling

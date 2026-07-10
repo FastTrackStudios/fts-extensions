@@ -1,13 +1,17 @@
 [package]
-name = "xtask"
-version = "0.1.0"
-edition = "2024"
+name = "fts-extensions-xtask"
+version.workspace = true
+edition.workspace = true
+description = "REAPER integration-test runner for fts-extensions (daw::test harness); invoked via `just reaper-integration-test`"
+
+[[bin]]
+name = "fts-extensions-xtask"
+path = "src/main.rs"
 
 [dependencies]
-# Test-runner orchestration now lives at `daw::test::runner` behind the
-# `test-harness` feature (former `reaper-test` crate with its `runner` feature).
-# Same Codeberg git dep as the rest of the workspace — the .pinned clones
-# are retired.
+# Test-runner orchestration lives at `daw::test::runner` behind the
+# `test-harness` feature (former `reaper-test` crate with its `runner`
+# feature).
 daw = { workspace = true, features = ["test-harness"] }
 
 [lints]
