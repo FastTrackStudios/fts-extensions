@@ -107,9 +107,27 @@ impl App {
                 "Failed to late-register action with REAPER"
             );
         }
+
+        let command_id = def.command_id.clone();
+        let handler = def.handler;
+        // Toggleable actions (e.g. a workflow's on/off toggle) own their state
+        // via `def.toggle_state`, but REAPER reads the displayed state from the
+        // daw-reaper registry. Bridge the two: seed it now, and refresh it after
+        // every invocation so the action list / toolbar reflect the real state.
+        let wrapped: Arc<dyn Fn() + Send + Sync> = match def.toggle_state {
+            Some(toggle_state) => {
+                daw_reaper::Reaper.set_toggle_state(&command_id, toggle_state());
+                let cid = command_id.clone();
+                Arc::new(move || {
+                    handler();
+                    daw_reaper::Reaper.set_toggle_state(&cid, toggle_state());
+                })
+            }
+            None => handler,
+        };
         self.action_handlers
             .borrow_mut()
-            .insert(def.command_id.clone(), def.handler);
+            .insert(command_id, wrapped);
     }
 }
 
@@ -118,10 +136,17 @@ static APP: OnceLock<Fragile<App>> = OnceLock::new();
 // ── Existing modules (not yet DawModule) ─────────────────────────────────────
 
 mod actions;
+mod architect_actions;
 mod continuous_action;
 mod error;
 mod item_actions;
 mod menu;
+mod midi_flam;
+mod midi_mode;
+#[cfg(feature = "mod-input")]
+mod midi_mode_input;
+#[cfg(feature = "mod-mirror")]
+mod mirror;
 #[cfg(all(feature = "mod-session", feature = "mod-input"))]
 mod mode_input;
 #[cfg(feature = "mod-session")]
@@ -133,6 +158,7 @@ mod sync_settings;
 mod tempo;
 #[cfg(feature = "ui-dock")]
 mod ui_test_panel;
+mod volume_balancer;
 
 // ── Timer callback ───────────────────────────────────────────────────────────
 
@@ -171,6 +197,15 @@ extern "C" fn timer_callback() {
             "process_tasks",
             std::panic::AssertUnwindSafe(|| app.process_tasks()),
         );
+        // Constant-sum fader linking (Parallel drum tracks, user groups).
+        catch_panic("volume_balancer_poll", crate::volume_balancer::poll);
+        // Live MIDI mirror: source-track edits → regenerated performance
+        // copies on their hidden mirror tracks (keyflow-orchestra).
+        #[cfg(feature = "mod-mirror")]
+        catch_panic("mirror_poll", crate::mirror::poll);
+        // Project-tab switches are handled by dynamic-template's event-hub
+        // subscription (ProjectEvent::CurrentChanged via
+        // poll_and_broadcast_transport below) — no watcher needed here.
         // Deferred, paced prewarm: wait ~2s for REAPER's main HWND, then
         // enqueue the prefix list and build a handful of overlays per tick.
         // Each overlay build now only allocates its own surface + Vello
@@ -245,14 +280,14 @@ extern "C" fn timer_callback() {
             std::panic::AssertUnwindSafe(|| process_pending_actions(app)),
         );
         #[cfg(feature = "ui-dock")]
-        catch_panic("update_panels", daw::ui::dock::update_panels);
+        catch_panic("update_panels", daw::reaper_ui::dock::update_panels);
     }
 }
 
 static ACTION_CHANNEL: OnceLock<(Sender<String>, Receiver<String>)> = OnceLock::new();
 
 fn action_channel() -> &'static (Sender<String>, Receiver<String>) {
-    ACTION_CHANNEL.get_or_init(|| crossbeam_channel::unbounded())
+    ACTION_CHANNEL.get_or_init(crossbeam_channel::unbounded)
 }
 
 fn process_pending_actions(app: &App) {
@@ -360,9 +395,9 @@ fn register_actions_sync(
     if let Err(err) = task_support.do_later_in_main_thread_asap(move || {
         info!(panels = panels.len(), "Panel definitions collected");
         for panel in &panels {
-            daw::ui::dock::register_panel_from_service(panel);
+            daw::reaper_ui::dock::register_panel_from_service(panel);
         }
-        daw::ui::dock::restore_dock_state();
+        daw::reaper_ui::dock::restore_dock_state();
         info!(panels = panels.len(), "Panel registration completed");
     }) {
         warn!("Failed to schedule panel registration: {err}");
@@ -433,6 +468,9 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
         .init();
 
     info!("FTS Extensions starting…");
+    info!(
+        "=== FTS BUILD MARKER: demo-action-v1 — FTS_DYNAMIC_TEMPLATE_INSERT_FULL_DEMO: one action builds the matrix demo session through the create machinery ==="
+    );
 
     // Kick off the wgpu Instance/Adapter/Device build on a worker thread
     // so the heavy GPU init runs in parallel with the rest of plugin_main
@@ -516,6 +554,12 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
         fts_launcher::daw_module::module(),
         #[cfg(feature = "mod-session")]
         session::daw_module::module_with_daw(daw_reaper::Reaper),
+        // Registered directly (session embeds it for FTS_SESSION_* dispatch but
+        // never chains its action defs) so the FTS_VISIBILITY_MANAGER_* /
+        // FTS_DYNAMIC_TEMPLATE_* / FTS_AUTO_COLOR_* actions land in REAPER's
+        // action list — bindable, and resolvable by named_command_lookup.
+        #[cfg(feature = "mod-session")]
+        dynamic_template::daw_module::module(),
         #[cfg(feature = "mod-sync")]
         daw_synchronization::daw_module::module(),
         #[cfg(feature = "mod-input")]
@@ -561,6 +605,13 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
         info!("Mode → input workflow bridge installed");
     }
 
+    // Bridge MIDI-editor mode changes to reaper-input workflows.
+    #[cfg(feature = "mod-input")]
+    {
+        midi_mode_input::install();
+        info!("MIDI-editor mode → input workflow bridge installed");
+    }
+
     // Collect actions from all modules after init has populated runtime state.
     let module_actions = module::collect_actions(&modules);
 
@@ -590,11 +641,7 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
 
     // Combine all defs for REAPER registration
     let mut all_defs: actions::ActionDefs = legacy_defs;
-    all_defs.extend(module_actions.into_iter().map(
-        |(id, display_name, handler, show_in_menu, toggleable)| {
-            (id, display_name, handler, show_in_menu, toggleable)
-        },
-    ));
+    all_defs.extend(module_actions);
     #[cfg(feature = "ui-dock")]
     all_defs.extend(
         ui_test_panel::action_defs()
@@ -633,11 +680,35 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
 
     #[cfg(feature = "ui-dock")]
     {
-        daw::ui::dock::init_service();
-        daw::ui::dock::init_dock(reaper_low::Reaper::get(), reaper_low::Swell::get());
+        daw::reaper_ui::dock::init_service();
+        daw::reaper_ui::dock::init_dock(reaper_low::Reaper::get(), reaper_low::Swell::get());
     }
 
     register_actions_sync(&all_defs, modules, panels);
+
+    // ── architect::action registration (additive) ───────────────────────
+    // New declarative action layer alongside the legacy `ActionDefs` path
+    // above. Every action here is ALSO already registered by
+    // `register_actions_sync` / `module::collect_actions` via the modules'
+    // existing `DawModule::actions()` — this second pass re-registers the
+    // same command ids through `daw_reaper::Reaper`'s new
+    // `architect::action::ActionBackend` impl so the metadata (description/
+    // category/group) exists, without removing the legacy path (REAPER's
+    // registry is idempotent per command id — see `register_action_main_thread`).
+    architect_actions::register_actions(&daw_reaper::Reaper);
+    #[cfg(feature = "mod-session")]
+    {
+        session::setlist_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
+        session::keyflow_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
+        session::preroll_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
+        session::auto_color_actions::register_actions(&daw_reaper::Reaper);
+        session::track_manager_actions::register_actions(&daw_reaper::Reaper);
+        session::mode_actions::register_actions(&daw_reaper::Reaper);
+        session::take_ranking::register_actions(&daw_reaper::Reaper);
+        session::record_actions::register_actions(&daw_reaper::Reaper);
+        session::group_actions::register_actions(&daw_reaper::Reaper);
+        dynamic_template::daw_module::register_architect_actions(&daw_reaper::Reaper);
+    }
 
     let app = APP.get().unwrap().get();
     let mut session = app.session.borrow_mut();

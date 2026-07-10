@@ -1,0 +1,278 @@
+// FTS Drum Converter
+// Any-to-any drum map converter: From map -> internal articulations -> To map.
+//
+// Maps: Alesis Strata Prime, FTS Drum Map, GGD Modern & Massive (Halpern).
+// Strata notes from the official PRIME Drum Module User Guide v1.2.1,
+// appendix 6.2 MIDI Mapping -- see jsfx/reference/strata-prime/.
+//
+// Hats:
+//  - CC-based maps (Strata) send bow/edge notes + openness on CC4. As input,
+//    the last CC4 value picks the discrete articulation (Tight/Closed/Open
+//    1-3). As output, each discrete hat articulation emits a CC4 value
+//    (derived from the same thresholds) before the bow/edge note.
+//  - FTS "H-Tip CC"/"H-Edge CC" notes (46/47) are accepted as CC-based hat
+//    input; FTS output uses the discrete notes.
+//  - Thresholds assume higher CC4 = more closed (Roland-style).
+//
+// Fallbacks: if the To map lacks an articulation, it degrades sensibly
+// (edge->tip, T2->T1, rim->head, stack->china, etc). Notes with no mapping
+// at all follow the Unmapped Notes slider.
+//
+// Cymbal chokes: assumes Strata Cymbal Choke = "Note" mode (Settings > MIDI).
+
+// Echo Guard: stops live playing from being converted and sent straight back
+// to the module (double triggers). Set the Input FX instance on the drum
+// track to "Tag" -- it stamps every live note into shared memory (gmem). Set
+// the send-to-kit instance to "Filter" -- notes matching a fresh tag are live
+// echoes and get dropped; untagged notes (item playback) pass to the kit.
+// Transport-independent: works while stopped, recording MIDI, or recording
+// audio off the module during MIDI playback.
+
+desc:FTS Drum Converter
+options:gmem=FTS_DrumConverter
+
+slider1:sl_from=0<0,2,1{Alesis Strata Prime,FTS Drum Map,GGD Modern & Massive}>From
+slider2:sl_to=1<0,2,1{Alesis Strata Prime,FTS Drum Map,GGD Modern & Massive}>To
+slider3:sl_orphan=0<0,1,1{Pass Through,Kill}>Unmapped Notes
+slider4:sl_th_tight=110<0,127,1>Hat Tight (CC4 >=)
+slider5:sl_th_closed=80<0,127,1>Hat Closed (CC4 >=)
+slider6:sl_th_open1=55<0,127,1>Hat Open 1 (CC4 >=)
+slider7:sl_th_open2=25<0,127,1>Hat Open 2 (CC4 >=, below = Open 3)
+slider8:sl_echo=0<0,2,1{Off,Tag (Input FX on drum track),Filter (send-to-kit track)}>Echo Guard
+slider9:sl_echo_ms=250<10,1000,1>Echo Window (ms)
+
+in_pin:none
+out_pin:none
+
+@init
+NOTE_ON=0x90; NOTE_OFF=0x80; CC=0xB0;
+CC_HAT=4;
+NMAPS=3; M_STRATA=0; M_FTS=1; M_GGD=2;
+
+// ---- internal articulation ids ----
+KICK=0; KICK_L=1; SNARE=2; SNARE_R=3; S_XSTICK=4; S_BUZZ=5; S_FLAM=6; S_RIMSHOT=7;
+T1=8; T2=9; T3=10; T4=11; T1_RIM=12; T2_RIM=13; T3_RIM=14; T4_RIM=15;
+STICKS=16;
+H_TIGHT_TIP=17; H_TIGHT_EDG=18; H_CLSD_TIP=19; H_CLSD_EDG=20;
+H_OPEN1=21; H_OPEN2=22; H_OPEN3=23; H_CHICK=24; H_CHING=25; H_BELL=26;
+CR_L=27; CR_L_CHK=28; CR_C=29; CR_C_CHK=30; CR_R=31; CR_R_CHK=32;
+R_BOW=33; R_BOW_HI=34; R_BELL=35; R_CRASH=36; R_CHK=37;
+CHINA=38; CHINA_CHK=39; SPLASH=40; SPLASH_CHK=41;
+STACK=42; MS_L=43; MS_R=44;
+NART=45;
+
+// ---- memory layout ----
+A2N=0;      // NMAPS*64 : artic -> note (output / primary input)
+N2A=256;    // NMAPS*128: note -> artic (input, incl. aliases)
+FB=704;     // 64       : artic -> fallback artic
+HATCC=800;  // per map: 1 = hat output is CC-based (CC4 + bow/edge note)
+HHBOW=804;  // per map: CC-based hat bow note (-1 = none)
+HHEDGE=808; // per map: CC-based hat edge note (-1 = none)
+ACTIVE=1024;// 128: note-on translation memo so note-off matches
+
+i=0; loop(NMAPS*64, A2N[i]=-1; i+=1);
+i=0; loop(NMAPS*128, N2A[i]=-1; i+=1);
+i=0; loop(64, FB[i]=-1; i+=1);
+i=0; loop(128, ACTIVE[i]=-1; i+=1);
+
+// ---- fallbacks (when the To map lacks an articulation) ----
+FB[KICK_L]=KICK; FB[SNARE_R]=SNARE;
+FB[S_BUZZ]=SNARE; FB[S_FLAM]=SNARE; FB[S_RIMSHOT]=SNARE; FB[S_XSTICK]=SNARE;
+FB[T2]=T1; FB[T4]=T3; FB[T3]=T1;
+FB[T1_RIM]=T1; FB[T2_RIM]=T2; FB[T3_RIM]=T3; FB[T4_RIM]=T4;
+FB[H_TIGHT_EDG]=H_TIGHT_TIP; FB[H_CLSD_EDG]=H_CLSD_TIP;
+FB[H_TIGHT_TIP]=H_CLSD_TIP; FB[H_CHING]=H_CHICK;
+FB[CR_C]=CR_L; FB[CR_C_CHK]=CR_L_CHK;
+FB[R_BOW_HI]=R_BOW;
+FB[STACK]=CHINA; FB[MS_L]=SPLASH; FB[MS_R]=SPLASH;
+FB[SPLASH]=CR_R; FB[SPLASH_CHK]=CR_R_CHK; // Strata has no splash pad
+
+// ================= Map 0: Alesis Strata Prime =================
+// Official: PRIME Drum Module User Guide v1.2.1, appendix 6.2 MIDI Mapping
+// (jsfx/reference/strata-prime/). Chokes send note + aftertouch 127/0.
+a=A2N+M_STRATA*64;
+a[KICK]=24;
+a[SNARE]=26; a[S_RIMSHOT]=29; a[S_XSTICK]=25;           // 88 = rim only (alias)
+a[T1]=38; a[T2]=35; a[T3]=31; a[T4]=33;                 // heads
+a[T1_RIM]=93; a[T2_RIM]=91; a[T3_RIM]=89; a[T4_RIM]=90; // rim only
+a[STICKS]=40;                                           // aux head
+a[H_BELL]=22; a[H_CHICK]=32; a[H_CHING]=56;             // bell / pedal / splash
+a[CR_L]=41; a[CR_L_CHK]=75;                             // cymbal 1 edge
+a[CR_C]=45; a[CR_C_CHK]=80;                             // cymbal 2 edge
+a[CR_R]=43; a[CR_R_CHK]=78;                             // cymbal 3 edge
+a[R_BOW]=60; a[R_BELL]=71; a[R_CRASH]=50; a[R_CHK]=87;  // ride bow/bell/edge
+a[CHINA]=47; a[CHINA_CHK]=82;                           // cymbal 4 edge
+HATCC[M_STRATA]=1; HHBOW[M_STRATA]=18; HHEDGE[M_STRATA]=20;
+
+// ================= Map 1: FTS Drum Map =================
+a=A2N+M_FTS*64;
+a[KICK]=24; a[KICK_L]=23;
+a[SNARE]=26; a[SNARE_R]=28; a[S_XSTICK]=25; a[S_BUZZ]=27;
+a[T1]=29; a[T2]=31; a[T3]=33; a[T4]=35;                // L-hand primary
+a[T1_RIM]=77; a[T2_RIM]=79; a[T3_RIM]=81; a[T4_RIM]=83;
+a[STICKS]=21;
+a[H_TIGHT_TIP]=37; a[H_TIGHT_EDG]=38; a[H_CLSD_TIP]=39; a[H_CLSD_EDG]=40;
+a[H_OPEN1]=41; a[H_OPEN2]=42; a[H_OPEN3]=43;
+a[H_CHICK]=44; a[H_CHING]=45; a[H_BELL]=54;
+a[CR_L]=48; a[CR_L_CHK]=49; a[CR_C]=50; a[CR_C_CHK]=51; a[CR_R]=52; a[CR_R_CHK]=53;
+a[R_BOW]=56; a[R_BOW_HI]=109; a[R_BELL]=57; a[R_CRASH]=58; a[R_CHK]=59;
+a[CHINA]=62; a[CHINA_CHK]=63; a[SPLASH]=64; a[SPLASH_CHK]=65;
+a[STACK]=71; a[MS_L]=73; a[MS_R]=75;
+HATCC[M_FTS]=0; HHBOW[M_FTS]=46; HHEDGE[M_FTS]=47; // H-Tip CC / H-Edge CC as input
+
+// ================= Map 2: GGD Modern & Massive (Halpern) =================
+a=A2N+M_GGD*64;
+a[KICK]=36;
+a[SNARE]=37; a[S_FLAM]=38; a[S_BUZZ]=39; a[S_XSTICK]=40; // 39 = Ruff
+a[T1]=42; a[T3]=45; a[T4]=46;   // rack / floor 1 / floor 2 (T2 falls back)
+a[H_TIGHT_TIP]=48; a[H_CLSD_TIP]=49;
+a[H_OPEN1]=52; a[H_OPEN2]=53; a[H_OPEN3]=54;
+a[H_CHICK]=55; a[H_CHING]=57;
+a[CR_L]=58; a[CR_L_CHK]=59; a[CR_R]=61; a[CR_R_CHK]=62;
+a[R_BOW]=73; a[R_BELL]=74; a[R_CRASH]=76;
+a[CHINA]=71; a[CHINA_CHK]=72; a[SPLASH]=77; a[SPLASH_CHK]=83;
+HATCC[M_GGD]=0; HHBOW[M_GGD]=-1; HHEDGE[M_GGD]=-1;
+
+// ---- derive N2A from A2N, then add input-only aliases ----
+m=0;
+loop(NMAPS,
+    i=0;
+    loop(NART,
+        v=A2N[m*64+i];
+        v>=0 ? N2A[m*128+v]=i;
+        i+=1;
+    );
+    m+=1;
+);
+n=N2A+M_STRATA*128;
+n[88]=S_XSTICK;                              // snare rim only
+n[70]=T1; n[66]=T2; n[61]=T3; n[63]=T4;      // tom rimshots -> heads
+n[73]=STICKS; n[94]=STICKS;                  // aux rimshot / rim only
+n[52]=CR_L; n[62]=CR_L;                      // cymbal 1 bow/bell
+n[55]=CR_C; n[65]=CR_C;                      // cymbal 2 bow/bell
+n[53]=CR_R; n[64]=CR_R;                      // cymbal 3 bow/bell
+n[57]=CHINA; n[67]=CHINA;                    // cymbal 4 bow/bell
+n=N2A+M_FTS*128;
+n[30]=T1; n[32]=T2; n[34]=T3; n[36]=T4;      // R-hand heads
+n[78]=T1_RIM; n[80]=T2_RIM; n[82]=T3_RIM; n[84]=T4_RIM; // R-hand rims
+n=N2A+M_GGD*128;
+n[43]=T3;                                    // Floor Tom 1 alt note
+n[41]=SNARE;                                 // Snare Off -> snare hit
+
+hh_cc=127;        // assume closed until first CC4 arrives
+last_sent_cc=-1;  // last CC4 emitted toward a CC-based hat map
+
+// Echo Guard ring buffer in gmem (shared across instances):
+// gmem[0] = write index; entry i: gmem[16+i*2] = note, gmem[17+i*2] = time
+EG_RING=64;
+
+// Tag mode: stamp a live note as it lands on the track
+function echo_tag(note)
+local(w)
+(
+    w=gmem[0];
+    gmem[16+w*2]=note;
+    gmem[17+w*2]=time_precise();
+    gmem[0]=(w+1)%EG_RING;
+);
+
+// Filter mode: does this note match a fresh live tag? consume it if so
+function echo_match(note)
+local(i, hit, t)
+(
+    hit=0; t=time_precise(); i=0;
+    loop(EG_RING,
+        !hit && gmem[16+i*2]==note && t-gmem[17+i*2] < sl_echo_ms*0.001 ? (
+            gmem[16+i*2]=-1; // consume: one tag cancels one echo
+            hit=1;
+        );
+        i+=1;
+    );
+    hit;
+);
+
+// input: discrete hat articulation from last CC4 value
+function hat_artic(edge)
+(
+    hh_cc>=sl_th_tight  ? (edge ? H_TIGHT_EDG : H_TIGHT_TIP) :
+    hh_cc>=sl_th_closed ? (edge ? H_CLSD_EDG  : H_CLSD_TIP)  :
+    hh_cc>=sl_th_open1  ? H_OPEN1 :
+    hh_cc>=sl_th_open2  ? H_OPEN2 :
+    H_OPEN3;
+);
+
+// output: representative CC4 value per openness zone
+// (midpoints between thresholds, so a round trip lands in the same zone)
+function hat_cc_value(art)
+(
+    art==H_TIGHT_TIP || art==H_TIGHT_EDG ? 127 :
+    art==H_CLSD_TIP  || art==H_CLSD_EDG  ? floor((sl_th_tight+sl_th_closed)/2) :
+    art==H_OPEN1 ? floor((sl_th_closed+sl_th_open1)/2) :
+    art==H_OPEN2 ? floor((sl_th_open1+sl_th_open2)/2) :
+    0; // Open 3
+);
+
+function is_hat_zone(art)
+(
+    art>=H_TIGHT_TIP && art<=H_OPEN3;
+);
+
+// artic -> note in map, walking the fallback chain
+function out_note(map,art)
+local(nn)
+(
+    nn=-1;
+    loop(6,
+        art>=0 && nn<0 ? (
+            nn=A2N[map*64+art];
+            nn<0 ? art=FB[art];
+        );
+    );
+    nn;
+);
+
+@block
+while (midirecv(ofs,m1,m2,m3)) (
+    st=m1&0xF0; ch=m1&0x0F;
+    st==CC && m2==CC_HAT ? (
+        hh_cc=m3;
+        midisend(ofs,m1,m2,m3);
+    ) :
+    st==NOTE_ON && m3>0 && sl_echo==2 && echo_match(m2) ? (
+        ACTIVE[m2]=-1; // live echo: drop it (its note-off dies via ACTIVE)
+    ) :
+    st==NOTE_ON && m3>0 ? (
+        // resolve input note -> articulation
+        art = m2==HHBOW[sl_from]  ? hat_artic(0) :
+              m2==HHEDGE[sl_from] ? hat_artic(1) :
+              N2A[sl_from*128+m2];
+        out=-1;
+        art>=0 ? (
+            HATCC[sl_to] && is_hat_zone(art) ? (
+                // CC-based hat output: openness CC first, then bow/edge note
+                cc_val=hat_cc_value(art);
+                cc_val!=last_sent_cc ? (
+                    midisend(ofs,CC|ch,CC_HAT,cc_val);
+                    last_sent_cc=cc_val;
+                );
+                out = (art==H_TIGHT_EDG || art==H_CLSD_EDG) ? HHEDGE[sl_to] : HHBOW[sl_to];
+            ) : (
+                out=out_note(sl_to,art);
+            );
+        );
+        out<0 && sl_orphan==0 ? out=m2; // pass through unmapped
+        out>=0 ? (
+            ACTIVE[m2]=out;
+            sl_echo==1 ? echo_tag(out); // stamp live note for the Filter instance
+            midisend(ofs,m1,out,m3);
+        );
+    ) :
+    st==NOTE_OFF || st==NOTE_ON ? ( // note-off or zero-velocity note-on
+        out=ACTIVE[m2];
+        out>=0 ? (
+            ACTIVE[m2]=-1;
+            midisend(ofs,m1,out,m3);
+        );
+    ) :
+    midisend(ofs,m1,m2,m3); // everything else passes through
+);

@@ -90,7 +90,7 @@ done
 DEV_PARENT="$(dirname "$PARENT")"
 mkdir -p "$DEV_PARENT"
 declare -A DEV_LEVEL=(
-  [architect]="https://git.starcommand.live/codywright/architect.git|main"
+  [architect]="https://codeberg.org/FastTrackStudios/architect.git|main"
   [Dioxus]=""  # placeholder; see Dioxus note below
 )
 

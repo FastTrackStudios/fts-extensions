@@ -253,7 +253,7 @@ pub fn move_grid_to_mouse() {
                 // Find closest tempo marker directly
                 let target_id = tempo_map.find_closest(mouse_position);
                 // Skip first marker (id 0)
-                let target_id = target_id.and_then(|id| if id == 0 { Some(1) } else { Some(id) });
+                let target_id = target_id.map(|id| if id == 0 { 1 } else { id });
 
                 if let Some(id) = target_id {
                     if let Some(point) = tempo_map.get_point(id) {

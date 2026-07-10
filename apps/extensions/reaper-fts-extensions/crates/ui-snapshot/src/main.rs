@@ -114,7 +114,7 @@ fn check(tolerance: f32) -> std::process::ExitCode {
         }
 
         match diff_png(&actual_path, &reference_path, tolerance) {
-            Ok(diff_count) if diff_count == 0 => println!("ok"),
+            Ok(0) => println!("ok"),
             Ok(diff_count) => {
                 println!("FAIL ({diff_count} differing pixels above tolerance {tolerance})");
                 let diff_path = actual_path.with_file_name(format!("{}-diff.png", scene.name));

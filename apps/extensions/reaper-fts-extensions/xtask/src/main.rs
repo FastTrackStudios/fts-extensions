@@ -4,10 +4,10 @@
 //!   cargo xtask                    # headless (DISPLAY=""), fastest
 //!   cargo xtask --gui              # visible REAPER window, watch tests run
 //!   cargo xtask --virtual          # virtual display (Xvfb), full GUI but invisible
-//!   cargo xtask <filter>           # run tests matching filter
+//!   cargo xtask `<filter>`         # run tests matching filter
 //!   FTS_KEEP_OPEN=1 cargo xtask   # keep REAPER open after tests
 
-use reaper_test::runner::{ExtensionPackage, TestPackage, TestRunner};
+use daw::test::runner::{ExtensionPackage, TestPackage, TestRunner};
 use std::env;
 use std::path::PathBuf;
 

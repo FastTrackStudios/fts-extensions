@@ -45,9 +45,9 @@ unsafe fn insert_menu_item(menu: raw::HMENU, item_id: u32, text: &str) {
         fMask: raw::MIIM_TYPE | raw::MIIM_DATA | raw::MIIM_ID,
         wID: item_id,
         dwTypeData: text_buf.as_mut_ptr() as *mut _,
-        ..std::mem::zeroed()
+        ..unsafe { std::mem::zeroed() }
     };
-    swell.InsertMenuItem(menu, -1, 1, &mut mi);
+    unsafe { swell.InsertMenuItem(menu, -1, 1, &mut mi) };
 }
 
 /// Insert a submenu using MENUITEMINFO (helgobox style).
@@ -59,9 +59,9 @@ unsafe fn insert_submenu(parent: raw::HMENU, submenu: raw::HMENU, text: &str) {
         fMask: raw::MIIM_TYPE | raw::MIIM_DATA | raw::MIIM_SUBMENU,
         hSubMenu: submenu,
         dwTypeData: text_buf.as_mut_ptr() as *mut _,
-        ..std::mem::zeroed()
+        ..unsafe { std::mem::zeroed() }
     };
-    swell.InsertMenuItem(parent, -1, 1, &mut mi);
+    unsafe { swell.InsertMenuItem(parent, -1, 1, &mut mi) };
 }
 
 /// Insert a separator using MENUITEMINFO.
@@ -70,9 +70,9 @@ unsafe fn insert_separator(menu: raw::HMENU) {
     let mut mi = raw::MENUITEMINFO {
         fMask: raw::MIIM_TYPE,
         fType: raw::MF_SEPARATOR,
-        ..std::mem::zeroed()
+        ..unsafe { std::mem::zeroed() }
     };
-    swell.InsertMenuItem(menu, -1, 1, &mut mi);
+    unsafe { swell.InsertMenuItem(menu, -1, 1, &mut mi) };
 }
 
 /// The `hookcustommenu` callback. REAPER calls this when populating menus.

@@ -20,17 +20,17 @@ use reaper_high::Reaper;
 
 pub type ActionDefs = Vec<(String, String, Arc<dyn Fn() + Send + Sync>, bool, bool)>;
 
-fn show(msg: impl Into<String>) {
+pub(crate) fn show(msg: impl Into<String>) {
     Reaper::get().show_console_msg(msg.into());
 }
 
 static TEST_TOGGLE_STATE: AtomicBool = AtomicBool::new(false);
 
-fn sync_toggle_state(command_id: &str, is_on: bool) {
+pub(crate) fn sync_toggle_state(command_id: &str, is_on: bool) {
     daw_reaper::Reaper.set_toggle_state(command_id, is_on);
 }
 
-fn toggle_test_toggle_handler() {
+pub(crate) fn toggle_test_toggle_handler() {
     let new_state = !TEST_TOGGLE_STATE.load(Ordering::Relaxed);
     TEST_TOGGLE_STATE.store(new_state, Ordering::Relaxed);
 
@@ -41,7 +41,7 @@ fn toggle_test_toggle_handler() {
     sync_toggle_state("FTS_TEST_TOGGLE", new_state);
 }
 
-fn move_cursor_creating_time_selection_by_measure(action_id: i32) {
+pub(crate) fn move_cursor_creating_time_selection_by_measure(action_id: i32) {
     let low = reaper_low::Reaper::get();
 
     let previous_cursor = low.GetCursorPosition();
@@ -176,7 +176,7 @@ pub fn build_action_defs() -> ActionDefs {
         action(
             "FTS_SPLIT_ITEMS_CROSSFADE_LEFT",
             "Split selected items at cursor with crossfade on left",
-            || item_actions::split_items_with_crossfade_left(),
+            item_actions::split_items_with_crossfade_left,
         ),
         toggle_menu_action("FTS_TEST_TOGGLE", "Test Toggle", toggle_test_toggle_handler),
         // ── Modes ────────────────────────────────────────────────────────────
@@ -239,6 +239,22 @@ pub fn build_action_defs() -> ActionDefs {
                 crate::sync_settings::toggle_drift_correction();
             },
         ),
+        // ── MIDI editor modes ─────────────────────────────────────────────
+        menu_action(
+            "FTS_MIDI_MODE_DRUMS",
+            "MIDI mode: Drums (drum-map view + drum keybinds)",
+            || crate::midi_mode::set_midi_mode(crate::midi_mode::MidiMode::Drums),
+        ),
+        menu_action(
+            "FTS_MIDI_MODE_CYCLE",
+            "MIDI mode: Cycle to next",
+            crate::midi_mode::cycle_midi_mode,
+        ),
+        action(
+            "FTS_MIDI_INSERT_FLAM",
+            "MIDI: Insert flam at mouse cursor",
+            crate::midi_flam::insert_flam_at_mouse,
+        ),
         // ── Info ─────────────────────────────────────────────────────────────
         menu_action("FTS_INFO", "FastTrackStudio Info", || {
             let version = env!("CARGO_PKG_VERSION");
@@ -248,6 +264,86 @@ pub fn build_action_defs() -> ActionDefs {
             ));
         }),
     ];
+    let mut defs = defs;
+
+    // ── Tempo — time signatures ─────────────────────────────────────────────
+    // Two insert actions per signature, both targeting the start of the
+    // measure under the edit cursor (flooring — 99% through measure 4 is
+    // still measure 4):
+    //  - plain: sets the signature (hold Shift while firing for single-measure)
+    //  - _SINGLE: always a single measure, restoring the previous signature on
+    //    the next downbeat — for key sequences (`T 2 4`) where Shift can't be
+    //    held through the whole chord sequence.
+    for &(num, denom) in crate::tempo::TIME_SIGNATURES {
+        defs.push(action(
+            &format!("FTS_TEMPO_INSERT_TIMESIG_{num}_{denom}"),
+            &format!("Insert {num}/{denom} time signature at measure (hold Shift: single measure)"),
+            move || crate::tempo::insert_time_signature_at_cursor(num, denom),
+        ));
+        defs.push(action(
+            &format!("FTS_TEMPO_INSERT_TIMESIG_{num}_{denom}_SINGLE"),
+            &format!("Insert single measure of {num}/{denom} (restores previous signature)"),
+            move || crate::tempo::insert_single_measure_time_signature(num, denom),
+        ));
+    }
+
+    // ── Volume balancer — constant-sum fader linking ────────────────────────
+    defs.push(action(
+        "FTS_VOLBAL_TOGGLE",
+        "Volume Balancer: toggle constant-sum fader linking",
+        || {
+            let on = !crate::volume_balancer::is_enabled();
+            crate::volume_balancer::set_enabled(on);
+            sync_toggle_state("FTS_VOLBAL_TOGGLE", on);
+            show(format!(
+                "FTS Volume Balancer: {}\n",
+                if on { "enabled" } else { "disabled" }
+            ));
+        },
+    ));
+    defs.push(action(
+        "FTS_VOLBAL_LINK_SELECTED",
+        "Volume Balancer: link selected tracks (constant total volume)",
+        crate::volume_balancer::link_selected_tracks,
+    ));
+    defs.push(action(
+        "FTS_VOLBAL_UNLINK_SELECTED",
+        "Volume Balancer: unlink groups containing selected tracks",
+        crate::volume_balancer::unlink_selected_tracks,
+    ));
+
+    // ── MIDI mirror — source tracks with live performance twins ────────────
+    #[cfg(feature = "mod-mirror")]
+    {
+        defs.push(action(
+            "FTS_MIRROR_LINK_SELECTED",
+            "Mirror: make selected tracks mirror sources (creates hidden performance twins)",
+            crate::mirror::link_selected_tracks,
+        ));
+        defs.push(action(
+            "FTS_MIRROR_UNLINK_SELECTED",
+            "Mirror: unlink selected source tracks",
+            crate::mirror::unlink_selected_tracks,
+        ));
+        defs.push(action(
+            "FTS_MIRROR_REGENERATE",
+            "Mirror: force regeneration of all mirror items",
+            crate::mirror::regenerate_all,
+        ));
+        defs.push(action(
+            "FTS_MIRROR_TOGGLE",
+            "Mirror: toggle live mirroring",
+            || {
+                let on = !crate::mirror::is_enabled();
+                crate::mirror::set_enabled(on);
+                sync_toggle_state("FTS_MIRROR_TOGGLE", on);
+                show(format!(
+                    "FTS Mirror: {}\n",
+                    if on { "enabled" } else { "disabled" }
+                ));
+            },
+        ));
+    }
 
     // Module actions (launcher, session-owned template/keyflow, sync, input)
     // are collected via daw::module::collect_actions() in lib.rs — not here.

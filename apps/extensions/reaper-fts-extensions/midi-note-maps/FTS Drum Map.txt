@@ -1,0 +1,58 @@
+# FTS Custom Drum Map
+# MIDI note/CC name map
+# Octave convention: middle C = C4 = 60 (REAPER default) -> Kick R at C1 = 24
+# K=Kick S=Snare T1/T2=Rack T3/T4=Floor H=HiHat C=Crash R=Ride
+
+109 R-Bow Hi
+84 T4 R Rim
+83 T4 L Rim
+82 T3 R Rim
+81 T3 L Rim
+80 T2 R Rim
+79 T2 L Rim
+78 T1 R Rim
+77 T1 L Rim
+75 Mini Stack R
+73 Mini Stack L
+71 Stack
+65 Splash Choke
+64 Splash
+63 China Choke
+62 China
+59 R-Choke
+58 R-Crash
+57 R-Bell
+56 R-Bow Lo
+54 H-Bell
+53 C-R Choke
+52 C-R
+51 C-C Choke
+50 C-C
+49 C-L Choke
+48 C-L
+47 H-Edge CC
+46 H-Tip CC
+45 H-Ching
+44 H-Chick
+43 H-Open3
+42 H-Open2
+41 H-Open1
+40 H-Clsd Edg
+39 H-Clsd Tip
+38 H-Tight Edg
+37 H-Tight Tip
+36 T4 R
+35 T4 L
+34 T3 R
+33 T3 L
+32 T2 R
+31 T2 L
+30 T1 R
+29 T1 L
+28 SR
+27 S-Buzz
+26 S
+25 S-Cross
+24 K
+23 KL
+21 Sticks

@@ -18,8 +18,8 @@ blitz-traits = { git = "https://github.com/DioxusLabs/blitz.git" }
 
 # Deterministic (CPU) image rendering — no GPU dependency, reproducible
 # pixel output across machines.
-anyrender = "0.10"
-anyrender_vello_cpu = "0.12"
+anyrender = "0.11"
+anyrender_vello_cpu = "0.14"
 peniko = "0.6"
 kurbo = "0.13"
 
@@ -33,3 +33,6 @@ image = { version = "0.25", default-features = false, features = ["png"] }
 dify = "0.8"
 
 clap = { version = "4", features = ["derive"] }
+
+[lints]
+workspace = true

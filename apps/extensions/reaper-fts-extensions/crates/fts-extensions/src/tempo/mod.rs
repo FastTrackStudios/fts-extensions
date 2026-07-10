@@ -9,6 +9,7 @@ pub mod envelope;
 pub mod grid;
 pub mod move_grid;
 pub mod snap_to_transient;
+pub mod time_signature;
 
 pub use envelope::TempoEnvelope;
 pub use grid::{get_closest_grid_line, get_closest_measure_grid_line};
@@ -19,4 +20,7 @@ pub use move_grid::{
 pub use snap_to_transient::{
     snap_grid_to_transient_constrained_handler, snap_grid_to_transient_fully_constrained_handler,
     snap_grid_to_transient_handler,
+};
+pub use time_signature::{
+    TIME_SIGNATURES, insert_single_measure_time_signature, insert_time_signature_at_cursor,
 };

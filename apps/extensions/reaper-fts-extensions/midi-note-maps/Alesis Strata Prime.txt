@@ -1,0 +1,49 @@
+# Alesis Strata Prime (official defaults)
+# PRIME Drum Module User Guide v1.2.1, appendix 6.2
+# MIDI note/CC name map -- chokes also send aftertouch 127 hold / 0 release
+
+94 Aux Rim Only
+93 Tom 1 Rim Only
+91 Tom 2 Rim Only
+90 Tom 4 Rim Only
+89 Tom 3 Rim Only
+88 Snare Rim Only
+87 Ride Choke
+82 Cym 4 Choke
+80 Cym 2 Choke
+78 Cym 3 Choke
+75 Cym 1 Choke
+73 Aux Rimshot
+71 Ride Bell
+70 Tom 1 Rimshot
+67 Cym 4 Bell
+66 Tom 2 Rimshot
+65 Cym 2 Bell
+64 Cym 3 Bell
+63 Tom 4 Rimshot
+62 Cym 1 Bell
+61 Tom 3 Rimshot
+60 Ride Bow
+57 Cym 4 Bow
+56 HiHat Splash
+55 Cym 2 Bow
+53 Cym 3 Bow
+52 Cym 1 Bow
+50 Ride Edge
+47 Cym 4 Edge
+45 Cym 2 Edge
+43 Cym 3 Edge
+41 Cym 1 Edge
+40 Aux Head
+38 Tom 1 Head
+35 Tom 2 Head
+33 Tom 4 Head
+32 HiHat Pedal
+31 Tom 3 Head
+29 Snare Rimshot
+26 Snare Head
+25 Snare Cross Stick
+24 Kick
+22 HiHat Bell
+20 HiHat Edge
+18 HiHat Bow

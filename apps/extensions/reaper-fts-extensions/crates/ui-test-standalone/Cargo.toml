@@ -10,3 +10,6 @@ path = "src/main.rs"
 [dependencies]
 dioxus-native = { git = "https://github.com/DioxusLabs/blitz.git", features = ["prelude"] }
 fts-ui = { workspace = true }
+
+[lints]
+workspace = true

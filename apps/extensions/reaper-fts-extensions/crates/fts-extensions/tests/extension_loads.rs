@@ -4,7 +4,7 @@
 //! The FTS Extensions plugin must be installed in REAPER's UserPlugins.
 
 use daw::rpc::Project;
-use reaper_test::{ReaperTestContext, reaper_test};
+use daw::test::{ReaperTestContext, reaper_test};
 use std::time::Duration;
 
 /// Wait for FTS Extensions to finish registering actions.
@@ -345,6 +345,43 @@ async fn all_actions_registered(ctx: &ReaperTestContext) -> eyre::Result<()> {
         "FTS_SESSION_TRACK_MANAGER_REORGANIZE_SELECTED_BY_ARRANGEMENT",
     ];
 
+    // ── Dynamic-template module (registered directly so the visibility
+    // manager / template / auto-color actions are bindable in REAPER's
+    // action list, not just reachable via the FTS_SESSION_* wrappers) ──
+    let template = [
+        "FTS_VISIBILITY_MANAGER_TOGGLE_DRUMS",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_PERCUSSION",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_BASS",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_GUITARS",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_KEYS",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_SYNTHS",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_HORNS",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_HARMONICA",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_STRINGS",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_VOCALS",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_CHOIR",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_ORCHESTRA",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_SFX",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_GUIDE",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_REFERENCE",
+        "FTS_VISIBILITY_MANAGER_TOGGLE_STEM_SPLIT",
+        "FTS_VISIBILITY_MANAGER_SHOW_ALL",
+        "FTS_VISIBILITY_MANAGER_HIDE_ALL",
+        "FTS_VISIBILITY_MANAGER_PROFILE_DRUM_EDITING",
+        "FTS_VISIBILITY_MANAGER_PROFILE_MIDI_EDITING",
+        "FTS_VISIBILITY_MANAGER_MODE_ORGANIZE",
+        "FTS_VISIBILITY_MANAGER_MODE_WRITE",
+        "FTS_VISIBILITY_MANAGER_MODE_PRODUCE",
+        "FTS_VISIBILITY_MANAGER_MODE_RECORD",
+        "FTS_VISIBILITY_MANAGER_MODE_EDIT",
+        "FTS_VISIBILITY_MANAGER_MODE_MIX",
+        "FTS_VISIBILITY_MANAGER_MODE_MASTER",
+        "FTS_VISIBILITY_MANAGER_MODE_LIVE",
+        "FTS_VISIBILITY_MANAGER_MODE_VIDEO",
+        "FTS_VISIBILITY_MANAGER_MODE_SCORING",
+        "FTS_VISIBILITY_MANAGER_REBUILD_CACHE",
+    ];
+
     // ── Input module (static actions only; dynamic presets/workflows depend on config) ──
     let input = [
         "FTS_INPUT_TOGGLE",
@@ -364,7 +401,14 @@ async fn all_actions_registered(ctx: &ReaperTestContext) -> eyre::Result<()> {
     ];
 
     // Collect all expected actions
-    let all_expected: Vec<&str> = [&legacy[..], &launcher[..], &session[..], &input[..]].concat();
+    let all_expected: Vec<&str> = [
+        &legacy[..],
+        &launcher[..],
+        &session[..],
+        &template[..],
+        &input[..],
+    ]
+    .concat();
 
     let mut missing = Vec::new();
     let mut found = 0usize;

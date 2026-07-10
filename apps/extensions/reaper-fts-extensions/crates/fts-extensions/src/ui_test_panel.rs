@@ -3,7 +3,7 @@
 //! Renders the fts-ui Showcase in the native Dioxus/Blitz renderer.
 
 use daw::module::{ActionDef, DockPosition, PanelComponent, PanelDef, PanelRenderer};
-use daw::ui::prelude::*;
+use daw::reaper_ui::prelude::*;
 
 const TAILWIND_CSS: &str = include_str!("../assets/tailwind.css");
 const FTS_THEME_CSS: &str = include_str!("../assets/fts-theme.css");
@@ -51,11 +51,11 @@ pub fn panel_defs() -> [PanelDef; 2] {
 pub fn action_defs() -> [ActionDef; 2] {
     [
         ActionDef::new("fts-ui-native", "FTS: UI Native", || {
-            daw::ui::dock::toggle_panel("FTS_UI_NATIVE");
+            daw::reaper_ui::dock::toggle_panel("FTS_UI_NATIVE");
         })
         .in_menu(),
         ActionDef::new("fts-ui-desktop", "FTS: UI Desktop", || {
-            daw::ui::dock::toggle_panel("FTS_UI_DESKTOP");
+            daw::reaper_ui::dock::toggle_panel("FTS_UI_DESKTOP");
         })
         .in_menu(),
     ]

@@ -15,7 +15,7 @@ use std::path::Path;
 /// Number of floating toolbars reserved per mode that opts in via
 /// [`Mode::has_toolbars`]. Currently 9 modes claim 3 toolbars each →
 /// 27 of REAPER's 32 slots; the remaining 5 stay user-customisable.
-/// `Mode::Minimal` is the lone opt-out — it shares no toolbars.
+/// `Mode::Scoring` is the lone opt-out — it shares no toolbars.
 pub const TOOLBARS_PER_MODE: u32 = 3;
 
 /// Total floating toolbar slots managed by the mode system.
@@ -51,9 +51,9 @@ fn floating_toolbar(n: u32) -> MenuSectionId {
 /// mode-major: Organize 1..3, Write 1..3, ..., Live 1..3.
 fn desired_titles() -> Vec<(MenuSectionId, String)> {
     let mut out = Vec::with_capacity(RESERVED_TOOLBAR_COUNT as usize);
-    // Walk only modes that own toolbars (skips `Minimal`). Keep the
+    // Walk only modes that own toolbars (skips `Scoring`). Keep the
     // overall slot-index continuous so the toolbar-N numbering stays
-    // dense — Minimal's 3 would-be slots simply don't get claimed.
+    // dense — Scoring's 3 would-be slots simply don't get claimed.
     let mut n = 0u32;
     for mode in Mode::ALL.iter().filter(|m| m.has_toolbars()) {
         for slot in 1..=TOOLBARS_PER_MODE {

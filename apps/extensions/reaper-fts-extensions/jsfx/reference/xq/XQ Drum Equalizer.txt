@@ -1,0 +1,42 @@
+XQ Drum Equalizer
+Author: Xeewaj Q.
+Version: R1A (Feb-08-2019)
+License: BSD-2-Clause
+Requires: REAPER 5.0+
+
+This plugin is designed to adjust (trim/clamp) different MIDI drums
+separately. It supports GM, Addictive Drums, BFD, Superior Drummer
+drum maps and 8 bands (kick, snare, hat, toms, rides, cymbals, brushes,
+misc).
+
+
+**** Parameters ****
+
+// Square brackets mean that this slider/droplist is read-only.
+// After each trim velocity is clamped to the standard range.
+
+Drum Map: select your drum map.
+
+Wrong Notes: how to process notes outside the map.
+	Kill: kill.
+	Pass: passthrough.
+
+Chokes: how to process choke notes.
+	Pass: passthrough.
+	Process: process (cymbals band).
+
+There are 8 bands and 1 master section with 4 controls each.
+	X Clamp Min: lowest possible velocity, lower values will be adjusted.
+	X Clamp Max: highest possible velocity, higher values will be adjusted.
+	X Trin: adds (removes) some fixed value to note velocity.
+	[X]: displays last event's actual velocity after processing.
+
+**** Installation ****
+
+Copy "XQ Drum Equalizer.jsfx" to your Reaper "Effects" directory.
+
+
+**** Changes ****
+
+R1  (Feb-06-2019): Initial version.
+R1A (Feb-08-2019): Fixed duplicate notes under some circumstances.

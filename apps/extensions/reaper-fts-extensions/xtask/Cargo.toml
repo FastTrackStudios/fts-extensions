@@ -4,4 +4,11 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-reaper-test = { path = "../../daw/crates/reaper-test", features = ["runner"] }
+# Test-runner orchestration now lives at `daw::test::runner` behind the
+# `test-harness` feature (former `reaper-test` crate with its `runner` feature).
+# Same Codeberg git dep as the rest of the workspace — the .pinned clones
+# are retired.
+daw = { workspace = true, features = ["test-harness"] }
+
+[lints]
+workspace = true
