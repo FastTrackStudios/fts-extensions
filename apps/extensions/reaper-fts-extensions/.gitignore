@@ -1,26 +1,8 @@
-# Rust/Cargo
-/target/
-
-# Nix/devenv/direnv local state
-/.devenv/
-/.direnv/
-.direnv/
-.devenv/
-
-# Local agent/editor state
-/.codex
-.envrc
+# Local REAPER/dev output
+/.fts-dev/
 
 # Logs and runtime databases
 *.log
 *.db
 *.db-shm
 *.db-wal
-
-# Local REAPER/dev output
-/.fts-dev/
-
-# Generated docs/frontend installs
-node_modules/
-docs/node_modules/
-.claude/

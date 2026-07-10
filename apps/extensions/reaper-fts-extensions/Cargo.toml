@@ -1,124 +1,117 @@
-[workspace]
-members = [
-    "crates/fts-extensions",
-    "crates/fts-extensions-actions",
-    "crates/ui-test-standalone",
-    "crates/ui-snapshot",
-    "xtask",
+[package]
+name = "fts-extensions"
+version.workspace = true
+edition.workspace = true
+description = "FTS Extensions — standalone REAPER extension providing utility actions (cdylib)"
+
+[lib]
+crate-type = ["cdylib"]
+name = "reaper_fts_extensions"
+path = "src/lib.rs"
+
+[features]
+# Subsystems confirmed good through bisection. Add more as they're verified.
+default = [
+    "host-hooks",
+    "mod-session",
+    "mod-input",
+    "mod-launcher",
+    "poll-broadcast",
+    "ui-dock",
 ]
-resolver = "2"
 
-[workspace.package]
-edition = "2024"
-version = "0.1.0"
+# Modules — each implements daw::DawModule.
+# `mod-launcher` requires `ui-dock` because its actions toggle a Dioxus
+# panel via `daw::ui::dock::toggle_panel`, which is a no-op unless the
+# host has called `init_dock`/`init_service` at startup.
+mod-launcher = ["dep:fts-launcher", "ui-dock"]
+mod-session = ["dep:session", "dep:dynamic-template"]
+mod-sync = ["dep:daw-synchronization"]
+mod-input = ["dep:reaper-input"]
+# Live MIDI mirror: source-of-truth tracks with hidden, library-timing-
+# adjusted twins regenerated on edit (keyflow-orchestra mirror pass).
+# Off by default — kept as the fallback path for third-party samplers
+# while the signal-sampler document-mode lookahead design supersedes it.
+mod-mirror = ["dep:keyflow-orchestra"]
 
-[workspace.dependencies]
-# FTS side repos are declared as pinned git dependencies for reproducible
-# manifests. All of them live on Codeberg and consume facet 0.50 / vox 0.10
-# from crates.io — no local-clone patch redirects remain.
-fts-launcher = { git = "https://codeberg.org/FastTrackStudios/fts-launcher.git", branch = "main", features = ["native"] }
-session = { git = "https://codeberg.org/FastTrackStudios/session.git", branch = "dev" }
-reaper-input = { git = "https://codeberg.org/FastTrackStudios/input.git", branch = "main" }
-crossbeam-channel = "0.5"
-once_cell = "1"
-eyre = "0.6"
-fragile = "2"
-reaper-high = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
-reaper-low = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
-reaper-macros = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
-reaper-medium = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
-daw = { git = "https://codeberg.org/FastTrackStudios/daw.git", branch = "main" }
-daw-reaper = { git = "https://codeberg.org/FastTrackStudios/daw.git", branch = "main" }
-daw-extension-runtime = { git = "https://codeberg.org/FastTrackStudios/daw.git", branch = "main" }
-daw-synchronization = { git = "https://codeberg.org/FastTrackStudios/daw.git", branch = "main" }
-keyflow-daw-analysis = { git = "https://codeberg.org/FastTrackStudios/keyflow.git", branch = "main" }
-# Direct dep so the extension can register the visibility-manager actions and
-# call the per-mode visibility entry point straight from the mode bridge.
-dynamic-template = { git = "https://codeberg.org/FastTrackStudios/dynamic-template.git", branch = "main" }
-fts-ui = { git = "https://codeberg.org/FastTrackStudios/fts-ui.git", branch = "main" }
-tokio = { version = "1.48", features = ["rt-multi-thread", "net", "sync"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-tracing-appender = "0.2"
-# The former standalone `reaper-test` crate was folded into the daw facade
-# as `daw::test` (behind the `test-harness` feature); consumers enable that
-# feature on `daw` instead of depending on reaper-test.
-# `reaper-config` from reaper-file gives us the typed parser/serializer
-# for `reaper-menu.ini` so we can rename floating toolbars per session
-# mode at extension startup.
-reaper-config = { git = "https://codeberg.org/FastTrackStudios/reaper-file.git", branch = "main" }
-architect = { git = "https://codeberg.org/FastTrackStudios/architect.git", branch = "main" }
+# Dioxus dock host (panels, ui_test_panel, dock_state restore, update_panels tick)
+ui-dock = ["daw/reaper-ui"]
 
-# ── Version-unification patches (git only; no local sibling paths) ─────────
-# Everything is a git dep now; these patches just pin shared revs across the
-# whole graph. See FastTrackStudios/fts-extensions#2.
+# Per-frame DAW state polling + broadcast (items, tempo, transport, markers, regions, tracks)
+poll-broadcast = []
 
-# moire: FTS fork (NixOS frame-pointer tolerance + facet 0.50 alignment).
-[patch."https://github.com/bearcove/moire"]
-moire = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-macros-noop = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-runtime = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-tokio = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-trace-capture = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-trace-types = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-types = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-wasm = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-wire = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
+# FastTrackStudio extensions menu hook + REAPER project importer registration
+host-hooks = []
 
-[patch.crates-io]
-# Dioxus pinned to upstream DioxusLabs/dioxus v0.7.9 (rev 3e43ffa6) to match the
-# `dx` CLI version — same pin as the daw repo. The old FastTrackStudios fork
-# (32d9f51, embedded-desktop-webview-host) is retired.
-dioxus = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus" }
-dioxus-asset-resolver = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-asset-resolver" }
-dioxus-cli-config = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-cli-config" }
-dioxus-config-macros = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-config-macros" }
-dioxus-core = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-core" }
-dioxus-core-macro = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-core-macro" }
-dioxus-core-types = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-core-types" }
-dioxus-devtools = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-devtools" }
-dioxus-devtools-types = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-devtools-types" }
-dioxus-document = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-document" }
-dioxus-history = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-history" }
-dioxus-hooks = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-hooks" }
-dioxus-html = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-html" }
-dioxus-html-internal-macro = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-html-internal-macro" }
-dioxus-rsx = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-rsx" }
-dioxus-signals = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-signals" }
-dioxus-stores = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-stores" }
-dioxus-stores-macro = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "dioxus-stores-macro" }
-generational-box = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "generational-box" }
-manganis = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "manganis" }
-manganis-core = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "manganis-core" }
-manganis-macro = { git = "https://github.com/DioxusLabs/dioxus", rev = "3e43ffa6cf1488d5388c888eb5f2494a006ae6de", package = "manganis-macro" }
-# moire (crates.io refs) → same FTS fork.
-moire = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-macros-noop = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-runtime = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-tokio = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-trace-capture = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-trace-types = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-types = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-wasm = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
-moire-wire = { git = "https://codeberg.org/FastTrackStudios/moire.git", rev = "7a2f1dc" }
+[dependencies]
+# architect::action — declarative action metadata (description/category/
+# group) + backend-agnostic registration, replacing actions-proto.
+architect.workspace = true
+# This crate's own #[architect::actions] trait *declarations* (pure
+# metadata, no REAPER deps) — split out so fts-cli's generated action
+# menu can depend on them without pulling in the full REAPER binding
+# stack this crate carries. See its own crate doc for why.
+fts-extensions-actions = { path = "../fts-extensions-actions" }
 
-[workspace.lints.rust]
-dead_code = "allow"
-unused = "allow"
-unused_unsafe = "allow"
+# FTS Launcher — search/workflow engine
+fts-launcher = { workspace = true, optional = true }
 
-[workspace.lints.rustdoc]
-broken_intra_doc_links = "allow"
-private_intra_doc_links = "allow"
-redundant_explicit_links = "allow"
+# Modules — each implements daw::DawModule
+session = { workspace = true, optional = true }
+# Registered directly (not just via session) so the visibility-manager /
+# template / auto-color actions land in REAPER's action list, and so the
+# mode bridge can call the per-mode visibility entry point without going
+# through the action registry.
+dynamic-template = { workspace = true, optional = true }
+# `default-features = false` disables `overlay-prewarm` so reaper-input
+# doesn't try to allocate wgpu/Vello surfaces during plugin_main, where
+# the REAPER host window isn't ready yet and surface creation OOMs.
+# Declared directly (not via `workspace = true`) because workspace
+# inheritance forbids overriding `default-features`. The path is the same
+# one the workspace's `[patch]` table redirects to.
+reaper-input = { path = "../../../input/crates/reaper-input", optional = true, default-features = false }
+daw-synchronization = { workspace = true, optional = true }
+# Orchestral mirror pass (pure Rust, no Reaper deps). Consumed from the
+# published keyflow workspace on Codeberg — the crate is dependency-light
+# (musicxml/thiserror/zip only) so it can't split the shared dependency graph.
+keyflow-orchestra = { git = "https://codeberg.org/FastTrackStudios/keyflow.git", branch = "main", optional = true }
 
-[workspace.lints.clippy]
-# Stylistic lints that don't reflect actual bugs and create churn on a
-# fast-moving codebase — same posture as the daw workspace. Re-tighten
-# per-crate when a sweep is done.
-collapsible_if = "allow"
-enum_variant_names = "allow"
-manual_c_str_literals = "allow"
-manual_is_multiple_of = "allow"
-manual_range_contains = "allow"
-not_unsafe_ptr_arg_deref = "allow"
+# DAW API. `reaper-ui` pulls in the Dioxus panel rendering host and is gated
+# behind the `ui-dock` feature. `daw-extension-runtime` is a public sibling
+# of daw (not a daw feature) because folding it in would cycle through
+# daw-reaper.
+daw = { workspace = true, features = ["reaper"] }
+daw-reaper.workspace = true
+daw-extension-runtime = { workspace = true }
+
+# Typed parser/serializer for `reaper-menu.ini`. Used by `mode_toolbars`
+# to rename floating toolbars 1..24 to `<Mode> <slot>` at startup.
+reaper-config = { workspace = true }
+
+# FTS design system (shadcn-ui clone for Dioxus)
+fts-ui = { workspace = true }
+
+# REAPER entry point machinery
+reaper-low.workspace = true
+reaper-medium.workspace = true
+reaper-high.workspace = true
+reaper-macros.workspace = true
+
+# Async runtime + task dispatch
+tokio.workspace = true
+crossbeam-channel.workspace = true
+fragile.workspace = true
+eyre.workspace = true
+
+# Observability
+tracing.workspace = true
+tracing-subscriber.workspace = true
+tracing-appender.workspace = true
+
+[dev-dependencies]
+daw = { workspace = true, features = ["reaper", "test-harness"] }
+eyre.workspace = true
+tokio = { workspace = true, features = ["macros"] }
+
+[lints]
+workspace = true
