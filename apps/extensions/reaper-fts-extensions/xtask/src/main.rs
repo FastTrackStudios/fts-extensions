@@ -26,12 +26,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let resources_dir =
         env::var("FTS_REAPER_RESOURCES").unwrap_or_else(|_| format!("{home}/.fts-dev"));
 
-    let project_root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("..")
-        .canonicalize()?;
-    let daw_root = project_root.join("../daw").canonicalize()?;
+    // xtask lives at apps/extensions/reaper-fts-extensions/xtask — the
+    // monorepo root (the ONE cargo workspace) is three levels up.
+    let repo_root = canonicalize_ctx(
+        &PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../../.."),
+        "monorepo root",
+    )?;
+    let project_root = repo_root.join("apps/extensions/reaper-fts-extensions");
 
     println!("=== FTS-Extensions Integration Tests ===");
+    println!("  Workspace: {}", repo_root.display());
     println!("  Project:   {}", project_root.display());
 
     let mode_label = if gui_mode {
@@ -62,21 +66,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         test_binary: Some("extension_loads".into()),
     }];
 
-    runner.install_test_extensions(
-        &daw_root,
-        &project_root,
-        &[ExtensionPackage {
+    // fts-extensions is built with `host-hooks` (default feature): it embeds
+    // the daw socket host itself. Do NOT install daw-bridge alongside it —
+    // two extensions would fight over the same fts-daw-<pid>.sock and every
+    // RPC would die with ConnectionClosed.
+    let stale_bridge = PathBuf::from(&resources_dir).join("UserPlugins/reaper_daw_bridge.so");
+    if stale_bridge.symlink_metadata().is_ok() {
+        std::fs::remove_file(&stale_bridge)?;
+        println!("  Removed stale daw-bridge: {}", stale_bridge.display());
+    }
+    runner.install_extension_package(
+        &repo_root,
+        &ExtensionPackage {
             package: "fts-extensions".into(),
             lib_stem: "reaper_fts_extensions".into(),
             plugin_name: "reaper_fts_extensions.so".into(),
             release: true,
-        }],
+        },
     )?;
 
     // Install config symlinks (modules contribute their own configs)
-    install_configs(&project_root, &resources_dir)?;
+    install_configs(&repo_root, &resources_dir)?;
 
-    runner.build_test_packages(&project_root, &packages)?;
+    runner.build_test_packages(&repo_root, &packages)?;
     let tests_passed = runner.run_reaper_tests(&packages, filter.as_deref())?;
 
     if tests_passed {
@@ -90,15 +102,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// Install config symlinks for all modules into `$resources_dir/fasttrackstudio/`.
 ///
 /// Each module gets its own subdirectory. Symlinks point back to the
-/// sibling repo source directories so config files are live-editable.
+/// in-tree source directories so config files are live-editable.
 fn install_configs(
-    project_root: &std::path::Path,
+    repo_root: &std::path::Path,
     resources_dir: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let fts_dir = PathBuf::from(resources_dir).join("fasttrackstudio");
 
     // ── input: keybind profiles + workflows ──
-    let input_src = project_root.join("../input/config").canonicalize()?;
+    let input_src = canonicalize_ctx(
+        &repo_root.join("features/reaper/reaper-input/config/config"),
+        "reaper-input keybind config",
+    )?;
     let input_keybinds = fts_dir.join("input/keybinds");
     std::fs::create_dir_all(&input_keybinds)?;
     for name in &[
@@ -119,7 +134,10 @@ fn install_configs(
     println!("  input: keybinds + workflows");
 
     // ── launcher: action packs ──
-    let launcher_src = project_root.join("../fts-launcher/packs").canonicalize()?;
+    let launcher_src = canonicalize_ctx(
+        &repo_root.join("features/launcher/fts-launcher/packs"),
+        "fts-launcher packs",
+    )?;
     let launcher_packs = fts_dir.join("launcher/packs");
     std::fs::create_dir_all(&launcher_packs)?;
     for name in &["reaper-core", "reaper-visibility"] {
@@ -129,6 +147,15 @@ fn install_configs(
 
     println!("  Config installed -> {}", fts_dir.display());
     Ok(())
+}
+
+/// `canonicalize()` with an error message that says WHICH path was missing.
+fn canonicalize_ctx(
+    path: &std::path::Path,
+    what: &str,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    path.canonicalize()
+        .map_err(|e| format!("{what} not found at {}: {e}", path.display()).into())
 }
 
 fn symlink_force(src: &std::path::Path, dst: &std::path::Path) -> std::io::Result<()> {
