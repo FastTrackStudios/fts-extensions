@@ -1,0 +1,140 @@
+[workspace]
+members = [
+    "crates/fts-extensions",
+    "crates/ui-test-standalone",
+    "crates/ui-snapshot",
+    "xtask",
+]
+resolver = "2"
+
+[workspace.package]
+edition = "2024"
+version = "0.1.0"
+
+[workspace.dependencies]
+# FTS side repos are declared as pinned git dependencies for reproducible
+# manifests. The local-development patch sections below redirect these packages
+# back to sibling checkouts while iterating across repos.
+fts-launcher = { git = "https://git.starcommand.live/FastTrackStudios/fts-launcher.git", rev = "698a29121c2d20c24cba5a58d608c6f5da0f56a0", features = ["native"] }
+session = { git = "https://git.starcommand.live/FastTrackStudios/session.git", rev = "189f942bd9fc07513ed913c488b36871f661849d" }
+reaper-input = { git = "https://git.starcommand.live/FastTrackStudios/input.git", rev = "7f06a6acf027956c94b6fa2cab5b50c425ca1067" }
+crossbeam-channel = "0.5"
+once_cell = "1"
+eyre = "0.6"
+fragile = "2"
+reaper-high = { git = "https://git.starcommand.live/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
+reaper-low = { git = "https://git.starcommand.live/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
+reaper-macros = { git = "https://git.starcommand.live/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
+reaper-medium = { git = "https://git.starcommand.live/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
+daw = { git = "https://git.starcommand.live/FastTrackStudios/daw.git", branch = "main" }
+daw-reaper = { git = "https://git.starcommand.live/FastTrackStudios/daw.git", branch = "main" }
+daw-extension-runtime = { git = "https://git.starcommand.live/FastTrackStudios/daw.git", branch = "main" }
+daw-synchronization = { git = "https://git.starcommand.live/FastTrackStudios/daw.git", branch = "main" }
+keyflow-daw-analysis = { git = "https://git.starcommand.live/FastTrackStudios/keyflow.git", branch = "main" }
+fts-ui = { git = "https://git.starcommand.live/FastTrackStudios/fts-ui.git", rev = "d9f01261cb59708300cc5b31fa7fe6bd766a66aa" }
+tokio = { version = "1.48", features = ["rt-multi-thread", "net", "sync"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+tracing-appender = "0.2"
+reaper-test = { git = "https://git.starcommand.live/FastTrackStudios/daw.git", rev = "273dbaa1ef5e4dfac9cd35988e13d2b4b954ab6e" }
+# `reaper-config` from reaper-file gives us the typed parser/serializer
+# for `reaper-menu.ini` so we can rename floating toolbars per session
+# mode at extension startup.
+reaper-config = { path = "../reaper-file/crates/reaper-config" }
+
+# ── Local development patches ─────────────────────────────────────────────
+# Keep these active when working from the FastTrackStudio sibling checkout.
+# Comment them out after pushing the pinned side-repo commits if you want to
+# validate the remote-pinned graph.
+# reaper-rs has no local sibling checkout. Redirect any
+# `github.com/.../reaper-rs.git` reference (from daw/input/etc. which
+# still pin github URLs internally) to the same starcommand source we
+# use directly, so cargo unifies on a single checkout.
+
+[patch."https://git.starcommand.live/FastTrackStudios/fts-launcher.git"]
+fts-launcher = { path = "../fts-launcher" }
+
+[patch."https://git.starcommand.live/FastTrackStudios/daw.git"]
+daw = { path = "../daw/crates/daw" }
+daw-proto = { path = "../daw/crates/daw-proto" }
+daw-control = { path = "../daw/crates/daw-control" }
+daw-extension-runtime = { path = "../daw/crates/daw-extension-runtime" }
+daw-module = { path = "../daw/crates/daw-module" }
+daw-reaper = { path = "../daw/crates/daw-reaper" }
+daw-reaper-dioxus = { path = "../daw/crates/daw-reaper-dioxus" }
+daw-reaper-embed = { path = "../daw/crates/daw-reaper-embed" }
+daw-synchronization = { path = "../daw/crates/daw-synchronization" }
+dawfile-reaper = { path = "../daw/crates/dawfile-reaper" }
+dawfile-ableton = { path = "../daw/crates/dawfile-ableton" }
+reaper-test = { path = "../daw/crates/reaper-test" }
+reaper-launcher = { path = "../daw/crates/reaper-launcher" }
+
+[patch."https://git.starcommand.live/FastTrackStudios/keyflow.git"]
+keyflow = { path = "../keyflow/crates/keyflow" }
+keyflow-daw-analysis = { path = "../keyflow/crates/keyflow-daw-analysis" }
+
+[patch."https://git.starcommand.live/FastTrackStudios/input.git"]
+reaper-input = { path = "../input/crates/reaper-input" }
+
+[patch."https://git.starcommand.live/FastTrackStudios/input_actions.git"]
+actions-proto = { path = "../input_actions/crates/actions-proto" }
+input = { path = "../input_actions/crates/input" }
+
+[patch."https://git.starcommand.live/FastTrackStudios/monarchy.git"]
+monarchy = { path = "../monarchy/crates/monarchy" }
+
+[patch."https://git.starcommand.live/FastTrackStudios/dynamic-template.git"]
+color-palette = { path = "../dynamic-template/crates/color-palette" }
+music-catalog = { path = "../dynamic-template/crates/music-catalog" }
+dynamic-template = { path = "../dynamic-template/crates/dynamic-template" }
+dynamic-template-proto = { path = "../dynamic-template/crates/dynamic-template-proto" }
+
+[patch."https://git.starcommand.live/FastTrackStudios/session.git"]
+session = { path = "../session/crates/session" }
+session-ui = { path = "../session/crates/session-ui" }
+
+[patch."https://git.starcommand.live/FastTrackStudios/fts-ui.git"]
+fts-ui = { path = "../fts-ui/crates/fts-ui" }
+
+[patch."https://github.com/bearcove/moire"]
+moire = { path = "../moire/crates/moire" }
+moire-macros-noop = { path = "../moire/crates/moire-macros-noop" }
+moire-runtime = { path = "../moire/crates/moire-runtime" }
+moire-tokio = { path = "../moire/crates/moire-tokio" }
+moire-trace-capture = { path = "../moire/crates/moire-trace-capture" }
+
+[patch.crates-io]
+dioxus = { path = "../../Dioxus/dioxus/packages/dioxus" }
+dioxus-asset-resolver = { path = "../../Dioxus/dioxus/packages/asset-resolver" }
+dioxus-cli-config = { path = "../../Dioxus/dioxus/packages/cli-config" }
+dioxus-config-macro = { path = "../../Dioxus/dioxus/packages/config-macro" }
+dioxus-config-macros = { path = "../../Dioxus/dioxus/packages/config-macros" }
+dioxus-core = { path = "../../Dioxus/dioxus/packages/core" }
+dioxus-core-macro = { path = "../../Dioxus/dioxus/packages/core-macro" }
+dioxus-core-types = { path = "../../Dioxus/dioxus/packages/core-types" }
+dioxus-devtools = { path = "../../Dioxus/dioxus/packages/devtools" }
+dioxus-devtools-types = { path = "../../Dioxus/dioxus/packages/devtools-types" }
+dioxus-document = { path = "../../Dioxus/dioxus/packages/document" }
+dioxus-history = { path = "../../Dioxus/dioxus/packages/history" }
+dioxus-hooks = { path = "../../Dioxus/dioxus/packages/hooks" }
+dioxus-html = { path = "../../Dioxus/dioxus/packages/html" }
+dioxus-html-internal-macro = { path = "../../Dioxus/dioxus/packages/html-internal-macro" }
+dioxus-rsx = { path = "../../Dioxus/dioxus/packages/rsx" }
+dioxus-signals = { path = "../../Dioxus/dioxus/packages/signals" }
+dioxus-stores = { path = "../../Dioxus/dioxus/packages/stores" }
+dioxus-stores-macro = { path = "../../Dioxus/dioxus/packages/stores-macro" }
+generational-box = { path = "../../Dioxus/dioxus/packages/generational-box" }
+manganis = { path = "../../Dioxus/dioxus/packages/manganis/manganis" }
+manganis-core = { path = "../../Dioxus/dioxus/packages/manganis/manganis-core" }
+manganis-macro = { path = "../../Dioxus/dioxus/packages/manganis/manganis-macro" }
+moire = { path = "../moire/crates/moire" }
+moire-macros-noop = { path = "../moire/crates/moire-macros-noop" }
+moire-runtime = { path = "../moire/crates/moire-runtime" }
+moire-tokio = { path = "../moire/crates/moire-tokio" }
+moire-trace-capture = { path = "../moire/crates/moire-trace-capture" }
+anyrender = { git = "https://git.starcommand.live/FastTrackStudios/anyrender.git", rev = "422b5d0" }
+anyrender_vello = { git = "https://git.starcommand.live/FastTrackStudios/anyrender.git", rev = "422b5d0" }
+anyrender_vello_cpu = { git = "https://git.starcommand.live/FastTrackStudios/anyrender.git", rev = "422b5d0" }
+anyrender_vello_hybrid = { git = "https://git.starcommand.live/FastTrackStudios/anyrender.git", rev = "422b5d0" }
+anyrender_svg = { git = "https://git.starcommand.live/FastTrackStudios/anyrender.git", rev = "422b5d0" }
+wgpu_context = { git = "https://git.starcommand.live/FastTrackStudios/anyrender.git", rev = "422b5d0" }
