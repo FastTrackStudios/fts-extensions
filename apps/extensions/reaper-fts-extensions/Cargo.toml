@@ -108,6 +108,9 @@ tracing-appender.workspace = true
 daw = { workspace = true, features = ["reaper", "test-harness"] }
 eyre.workspace = true
 tokio = { workspace = true, features = ["macros"] }
+# Integration tests assert against the canonical ruler-lane layout
+# (session::ruler_lanes::CoreLane) instead of magic lane numbers.
+session.workspace = true
 
 [lints]
 workspace = true

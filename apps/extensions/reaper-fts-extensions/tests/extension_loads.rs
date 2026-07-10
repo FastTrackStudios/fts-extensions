@@ -4,6 +4,11 @@
 //! The FTS Extensions plugin must be installed in REAPER's UserPlugins.
 
 use daw::rpc::Project;
+use session::ruler_lanes::CoreLane;
+
+/// Canonical lane indices from the session domain (SONG=0, SECTIONS=1, MARKS=2).
+const SECTIONS_LANE: u32 = CoreLane::Sections.lane_index();
+const MARKS_LANE: u32 = CoreLane::Marks.lane_index();
 use daw::test::{ReaperTestContext, reaper_test};
 use std::time::Duration;
 
@@ -215,23 +220,23 @@ async fn input_profile_selector_is_in_action_list(ctx: &ReaperTestContext) -> ey
     Ok(())
 }
 
-/// Verify the input actions panel toggle is also present in REAPER's action list.
+/// Verify the input status panel toggle is also present in REAPER's action list.
 #[reaper_test]
-async fn input_actions_panel_is_in_action_list(ctx: &ReaperTestContext) -> eyre::Result<()> {
+async fn input_status_panel_is_in_action_list(ctx: &ReaperTestContext) -> eyre::Result<()> {
     wait_for_ready(ctx).await?;
     let actions = ctx.daw.action_registry();
 
-    let cmd_id = wait_for_input_action(ctx, "FTS_INPUT_TOGGLE_ACTIONS_PANEL").await?;
+    let cmd_id = wait_for_input_action(ctx, "FTS_INPUT_TOGGLE_STATUS_PANEL").await?;
     let in_list = actions
-        .is_in_action_list("FTS_INPUT_TOGGLE_ACTIONS_PANEL")
+        .is_in_action_list("FTS_INPUT_TOGGLE_STATUS_PANEL")
         .await?;
     assert!(
         in_list,
-        "FTS_INPUT_TOGGLE_ACTIONS_PANEL should appear in REAPER's action list"
+        "FTS_INPUT_TOGGLE_STATUS_PANEL should appear in REAPER's action list"
     );
 
     ctx.log(&format!(
-        "FTS_INPUT_TOGGLE_ACTIONS_PANEL registered with cmd_id={cmd_id}"
+        "FTS_INPUT_TOGGLE_STATUS_PANEL registered with cmd_id={cmd_id}"
     ));
     Ok(())
 }
@@ -302,15 +307,15 @@ async fn all_actions_registered(ctx: &ReaperTestContext) -> eyre::Result<()> {
         "FTS_SESSION_CREATE_NEW_DRUM_KIT",
         "FTS_SESSION_CREATE_NEW_ELECTRONIC_DRUMS",
         "FTS_SESSION_CREATE_NEW_BASS_GUITAR",
-        "FTS_SESSION_CREATE_NEW_SYNTH_BASS",
         "FTS_SESSION_CREATE_NEW_ELECTRIC_GUITAR",
         "FTS_SESSION_CREATE_NEW_ACOUSTIC_GUITAR",
-        "FTS_SESSION_CREATE_NEW_PIANO",
-        "FTS_SESSION_CREATE_NEW_ORGAN",
-        "FTS_SESSION_CREATE_NEW_ELECTRIC_KEYS",
-        "FTS_SESSION_CREATE_NEW_SYNTH_LEAD",
-        "FTS_SESSION_CREATE_NEW_SYNTH_PAD",
-        "FTS_SESSION_CREATE_NEW_SYNTH_ARP",
+        "FTS_SESSION_CREATE_NEW_KEYS",
+        "FTS_SESSION_CREATE_NEW_SYNTH",
+        "FTS_SESSION_CREATE_NEW_ORCHESTRAL_STRINGS",
+        "FTS_SESSION_CREATE_NEW_ORCHESTRAL_BRASS",
+        "FTS_SESSION_CREATE_NEW_ORCHESTRAL_WOODWINDS",
+        "FTS_SESSION_CREATE_NEW_ORCHESTRAL_PERCUSSION",
+        "FTS_SESSION_CREATE_NEW_SFX",
         "FTS_SESSION_CREATE_NEW_LEAD_VOCALS",
         "FTS_SESSION_CREATE_NEW_BACKGROUND_VOCALS",
         "FTS_SESSION_TOGGLE_DRUMS_VISIBILITY",
@@ -392,8 +397,6 @@ async fn all_actions_registered(ctx: &ReaperTestContext) -> eyre::Result<()> {
         "FTS_INPUT_MOUSE_RESET_TO_PROFILE",
         "FTS_INPUT_PROFILE_SELECTOR",
         "FTS_INPUT_WORKFLOW_SELECTOR",
-        "FTS_INPUT_TOGGLE_ACTIONS_PANEL",
-        "FTS_INPUT_TOGGLE_KEYBOARD_PANEL",
         "FTS_INPUT_TOGGLE_STATUS_PANEL",
         "FTS_INPUT_DEV_TEST_MOUSE_MODIFIER_IDS",
         "FTS_INPUT_DEV_RESET_ITEM_CLICK_MODIFIERS",
@@ -449,7 +452,7 @@ async fn session_keyflow_marker_action_inserts_marker(ctx: &ReaperTestContext) -
     execute_registered_action(ctx, "FTS_SESSION_INSERT_START_MARKER").await?;
 
     let marker = wait_for_marker_named(ctx, "=START").await?;
-    assert_eq!(marker.lane, Some(4), "=START should be on START/END lane");
+    assert_eq!(marker.lane, Some(MARKS_LANE), "=START should be on MARKS lane");
     assert_eq!(marker.position_seconds(), 2.0);
     assert!(marker.color.is_some(), "=START should get a default color");
     Ok(())
@@ -465,7 +468,7 @@ async fn session_keyflow_region_action_inserts_region(ctx: &ReaperTestContext) -
     execute_registered_action(ctx, "FTS_SESSION_INSERT_CHORUS_REGION").await?;
 
     let region = wait_for_region_named(ctx, "CH").await?;
-    assert_eq!(region.lane, Some(2), "CH should be on SECTIONS lane");
+    assert_eq!(region.lane, Some(SECTIONS_LANE), "CH should be on SECTIONS lane");
     assert_eq!(region.start_seconds(), 4.0);
     assert_eq!(region.end_seconds(), 12.0);
     assert!(region.color.is_some(), "CH should get a default color");
@@ -491,7 +494,7 @@ async fn session_keyflow_region_action_uses_default_length_and_advances_cursor(
     execute_registered_action(ctx, "FTS_SESSION_INSERT_CHORUS_REGION").await?;
 
     let region = wait_for_region_named(ctx, "CH").await?;
-    assert_eq!(region.lane, Some(2), "CH should be on SECTIONS lane");
+    assert_eq!(region.lane, Some(SECTIONS_LANE), "CH should be on SECTIONS lane");
     assert_eq!(region.start_seconds(), 0.0);
     assert!(
         region.end_seconds().is_finite(),
@@ -531,7 +534,7 @@ async fn session_keyflow_region_action_ignores_oversized_time_selection(
     execute_registered_action(ctx, "FTS_SESSION_INSERT_OUTRO_REGION").await?;
 
     let region = wait_for_region_named(ctx, "OUT").await?;
-    assert_eq!(region.lane, Some(2), "OUT should be on SECTIONS lane");
+    assert_eq!(region.lane, Some(SECTIONS_LANE), "OUT should be on SECTIONS lane");
     assert_eq!(region.start_seconds(), 0.0);
     assert!(
         (region.end_seconds() - expected_end).abs() <= 0.001,
@@ -559,7 +562,7 @@ async fn session_keyflow_count_in_region_defaults_to_two_measures_and_pink(
     execute_registered_action(ctx, "FTS_SESSION_INSERT_COUNT_IN_REGION").await?;
 
     let region = wait_for_region_named(ctx, "COUNT").await?;
-    assert_eq!(region.lane, Some(2), "COUNT should be on SECTIONS lane");
+    assert_eq!(region.lane, Some(SECTIONS_LANE), "COUNT should be on SECTIONS lane");
     assert_eq!(region.start_seconds(), 0.0);
     assert!(
         (region.end_seconds() - expected_end).abs() <= 0.001,
@@ -580,7 +583,7 @@ async fn session_keyflow_section_actions_retroactively_update_chorus_names(
     project.transport().set_time_selection(0.0, 8.0).await?;
     execute_registered_action(ctx, "FTS_SESSION_INSERT_CHORUS_REGION").await?;
     let regions = wait_for_region_names(&project, &["CH"]).await?;
-    assert_eq!(regions[0].lane, Some(2), "CH should be on SECTIONS lane");
+    assert_eq!(regions[0].lane, Some(SECTIONS_LANE), "CH should be on SECTIONS lane");
 
     project.transport().set_position(8.0).await?;
     project.transport().set_time_selection(8.0, 16.0).await?;
@@ -596,7 +599,7 @@ async fn session_keyflow_section_actions_retroactively_update_chorus_names(
     assert_eq!(regions[0].start_seconds(), 0.0);
     assert_eq!(regions[1].start_seconds(), 8.0);
     assert_eq!(regions[2].start_seconds(), 32.0);
-    assert!(regions.iter().all(|region| region.lane == Some(2)));
+    assert!(regions.iter().all(|region| region.lane == Some(SECTIONS_LANE)));
     assert!(regions.iter().all(|region| region.color.is_some()));
 
     project.transport().clear_time_selection().await?;
