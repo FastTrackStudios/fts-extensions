@@ -85,6 +85,7 @@ impl App {
     /// REAPER's action list so `named_command_lookup` resolves it the
     /// next time a binding fires it. No-op if the command is already
     /// registered (REAPER's registry handles the duplicate case).
+    #[cfg(feature = "mod-input")]
     fn register_late_action(
         &self,
         def: reaper_input::infrastructure::action_registry::DynActionDef,
