@@ -83,6 +83,12 @@ pub trait FtsActions {
     #[action(description = "Split selected items at cursor with crossfade on left")]
     fn split_items_crossfade_left(&self);
 
+    #[action(
+        description = "Smart duplicate: duplicate selected items forward by the selection's measure span (group + color preserving, tempo-aware)",
+        category = "Editing"
+    )]
+    fn smart_duplicate(&self);
+
     #[action(description = "Test Toggle", category = "Test", toggleable = true)]
     fn test_toggle(&self);
 

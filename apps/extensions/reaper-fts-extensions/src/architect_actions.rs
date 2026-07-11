@@ -113,6 +113,10 @@ impl FtsActions for FtsActionsImpl {
         crate::item_actions::split_items_with_crossfade_left();
     }
 
+    fn smart_duplicate(&self) {
+        crate::smart_duplicate::smart_duplicate();
+    }
+
     fn test_toggle(&self) {
         crate::actions::toggle_test_toggle_handler();
     }

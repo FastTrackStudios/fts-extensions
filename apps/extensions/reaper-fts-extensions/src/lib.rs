@@ -155,6 +155,7 @@ mod mode_selector;
 #[cfg(feature = "mod-session")]
 mod mode_toolbars;
 mod reaper_utils;
+mod smart_duplicate;
 mod sync_settings;
 mod tempo;
 #[cfg(feature = "ui-dock")]
