@@ -74,7 +74,7 @@ just snapshot-check
 ```
 
 `just install` builds the extension and symlinks it into
-`$REAPER_HOME/UserPlugins`, defaulting to `$HOME/.fts-dev/UserPlugins`.
+`$REAPER_HOME/UserPlugins`, defaulting to `$HOME/fts-dev/UserPlugins`.
 
 `just install-config` symlinks input keybind/workflow config and launcher packs
 from sibling repos into `$REAPER_HOME/fasttrackstudio`.

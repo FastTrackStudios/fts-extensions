@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let home = env::var("HOME").unwrap_or_else(|_| "/tmp".into());
     let resources_dir =
-        env::var("FTS_REAPER_RESOURCES").unwrap_or_else(|_| format!("{home}/.fts-dev"));
+        env::var("FTS_REAPER_RESOURCES").unwrap_or_else(|_| format!("{home}/fts-dev"));
 
     // xtask lives at apps/extensions/reaper-fts-extensions/xtask — the
     // monorepo root (the ONE cargo workspace) is three levels up.

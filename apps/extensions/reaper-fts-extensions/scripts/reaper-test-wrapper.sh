@@ -4,7 +4,7 @@
 #
 # Resolution order for the REAPER binary:
 #   1. $FTS_DEV/launch.json ("reaper_executable") when fts-dev has set up
-#      a test profile (~/.fts-dev by default)
+#      a test profile (~/fts-dev by default)
 #   2. `command -v reaper` (nix profile / system PATH)
 #
 # On NixOS the binary may need an FHS environment (reaper-env/bubblewrap);
@@ -19,7 +19,7 @@ if [ -n "${FTS_VIRTUAL_DISPLAY:-}" ] && [ -z "${DISPLAY:-}" ]; then
     export DISPLAY="$FTS_VIRTUAL_DISPLAY"
 fi
 
-FTS_DEV="${FTS_DEV:-$HOME/.fts-dev}"
+FTS_DEV="${FTS_DEV:-$HOME/fts-dev}"
 CONFIG="${FTS_DEV}/launch.json"
 
 REAPER_EXECUTABLE=""

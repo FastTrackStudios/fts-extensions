@@ -1,7 +1,7 @@
 # FTS Extensions — Handoff (2026-06-06)
 
 State of the world after the modes/phases/visibility push. Everything below
-is **installed locally** (`just install-release` → `~/.fts-dev/UserPlugins/`)
+is **installed locally** (`just install-release` → `~/fts-dev/UserPlugins/`)
 and **pushed to Codeberg** on the branches listed at the bottom.
 
 ## What exists now
