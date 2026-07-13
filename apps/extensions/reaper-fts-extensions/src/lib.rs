@@ -702,6 +702,7 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     {
         session::setlist_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         session::keyflow_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
+        session::keyflow_scaffold::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         session::preroll_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         session::auto_color_actions::register_actions(&daw_reaper::Reaper);
         session::track_manager_actions::register_actions(&daw_reaper::Reaper);
