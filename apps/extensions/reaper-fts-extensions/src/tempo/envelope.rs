@@ -232,7 +232,7 @@ impl TempoEnvelope {
     /// Inserts a new point after the given index.
     pub fn create_point(&mut self, after_id: usize, time: f64, bpm: f64, shape: i32) -> bool {
         // Validate
-        if bpm < MIN_BPM || bpm > MAX_BPM {
+        if !(MIN_BPM..=MAX_BPM).contains(&bpm) {
             return false;
         }
 
@@ -367,7 +367,7 @@ pub fn move_tempo(
 
     // Check if values are legal
     if check_edited_points {
-        if new_b2 < MIN_BPM || new_b2 > MAX_BPM || new_b1 < MIN_BPM || new_b1 > MAX_BPM {
+        if !(MIN_BPM..=MAX_BPM).contains(&new_b2) || !(MIN_BPM..=MAX_BPM).contains(&new_b1) {
             return false;
         }
         if (new_t2 - t1) < MIN_TEMPO_DIST || (t3 - new_t2) < MIN_TEMPO_DIST {
@@ -391,7 +391,7 @@ pub fn move_tempo(
 
             let new_bpm = point.bpm - direction * (new_b1 - b1);
 
-            if check_edited_points && (new_bpm > MAX_BPM || new_bpm < MIN_BPM) {
+            if check_edited_points && !(MIN_BPM..=MAX_BPM).contains(&new_bpm) {
                 return false;
             }
 
