@@ -178,7 +178,7 @@ pub fn poll() {
     let state = state_guard.get_or_insert_with(State::default);
     state.tick = state.tick.wrapping_add(1);
 
-    if DIRTY.swap(false, Ordering::AcqRel) || state.tick % RESYNC_TICKS == 0 {
+    if DIRTY.swap(false, Ordering::AcqRel) || state.tick.is_multiple_of(RESYNC_TICKS) {
         let fresh = load_groups();
         // Keep prev volumes for groups whose membership didn't change so a
         // resync never masks an in-flight fader move.
