@@ -16,6 +16,10 @@ use tracing::{debug, info, warn};
 
 /// Move grid action variant
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[allow(
+    clippy::enum_variant_names,
+    reason = "the shared `Closest` prefix names the family of \"move to nearest X\" actions; renaming would touch 40+ call sites for a cosmetic lint"
+)]
 pub enum MoveGridVariant {
     /// Move closest tempo marker
     ClosestTempo,

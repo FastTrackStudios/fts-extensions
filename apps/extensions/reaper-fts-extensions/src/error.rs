@@ -28,7 +28,7 @@ pub enum Error {
     InvalidKeySequence(String),
 
     /// CString creation failed (NUL byte in string)
-    CStringError(std::ffi::NulError),
+    CString(std::ffi::NulError),
 }
 
 impl std::fmt::Display for Error {
@@ -39,7 +39,7 @@ impl std::fmt::Display for Error {
             Self::LockPoisoned(msg) => write!(f, "Lock poisoned: {msg}"),
             Self::ActionNotFound(action) => write!(f, "Action not found: {action}"),
             Self::InvalidKeySequence(seq) => write!(f, "Invalid key sequence: {seq}"),
-            Self::CStringError(e) => write!(f, "CString error: {e}"),
+            Self::CString(e) => write!(f, "CString error: {e}"),
         }
     }
 }
@@ -48,7 +48,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Io(e) => Some(e),
-            Self::CStringError(e) => Some(e),
+            Self::CString(e) => Some(e),
             _ => None,
         }
     }
@@ -62,7 +62,7 @@ impl From<std::io::Error> for Error {
 
 impl From<std::ffi::NulError> for Error {
     fn from(e: std::ffi::NulError) -> Self {
-        Self::CStringError(e)
+        Self::CString(e)
     }
 }
 
