@@ -596,7 +596,7 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     // correct mode and there's no flash of the default Organize mode.
     #[cfg(feature = "mod-session")]
     {
-        if let Some(mode) = session::mode_actions::restore_persisted_mode() {
+        if let Some(mode) = session::modes::restore_persisted_mode() {
             info!(mode = %mode, "Restored persisted session mode");
         } else {
             info!("No persisted session mode — staying on default");
@@ -704,27 +704,27 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     architect_actions::register_actions(&daw_reaper::Reaper);
     #[cfg(feature = "mod-session")]
     {
-        session::setlist_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
+        session::setlist::actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         // Now the ONLY registration of FTS_SESSION_TOGGLE_PLAYBACK /
         // _TOGGLE_SONG_LOOP: the legacy `session_actions` entries that used
         // to declare them are gone, and they never had a dispatch arm in
         // `daw_module`'s chain — the commands existed but did nothing.
-        session::playback_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
-        session::keyflow_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
-        session::keyflow_scaffold::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
+        session::playback::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
+        session::keyflow::actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
+        session::keyflow::scaffold::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         daw_actions::preroll::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         daw_actions::auto_color::register_actions(&daw_reaper::Reaper);
         // No per-module wrapper: the `#[architect::actions]` macro emits
         // the registration fn, and the "these live under Session" nesting
         // is composed here (where that fact belongs) by wrapping the
         // backend once, rather than each action trait naming its parent.
-        session::track_manager_actions::register_track_manager_actions(
+        session::track_manager::register_track_manager_actions(
             &architect::action::ScopedActionBackend::new(daw_reaper::Reaper, "SESSION", "Session"),
-            std::sync::Arc::new(session::track_manager_actions::TrackManager::new(
+            std::sync::Arc::new(session::track_manager::TrackManager::new(
                 daw_reaper::Reaper,
             )),
         );
-        session::mode_actions::register_actions(&daw_reaper::Reaper);
+        session::modes::register_actions(&daw_reaper::Reaper);
         daw_actions::take_ranking::register_actions(&daw_reaper::Reaper);
         daw_actions::record::register_actions(&daw_reaper::Reaper);
         daw_actions::groups::register_actions(&daw_reaper::Reaper);

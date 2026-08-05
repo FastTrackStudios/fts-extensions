@@ -1,6 +1,6 @@
 //! Session mode ↔ reaper-input workflow bridge.
 //!
-//! Each [`session::mode_actions::Mode`] maps to a workflow id of the form
+//! Each [`session::modes::Mode`] maps to a workflow id of the form
 //! `mode-<slug>` (e.g. `mode-organize`, `mode-write`). On mode change we
 //! activate the matching workflow, which auto-deactivates the previous
 //! one — `WorkflowManager` holds a single `active_workflow`. The base
@@ -12,7 +12,7 @@
 //! Add `keybind_overlays(...)`, `mouse_overlays(...)`, or `settings(...)`
 //! blocks to those files to give a mode behavior — no Rust changes needed.
 
-use session::mode_actions::{self, Mode};
+use session::modes::{self as mode_actions, Mode};
 
 /// Workflow id for a given mode. Must match the basename (sans `.styx`)
 /// of the per-mode workflow file under `input/config/workflows/`.
