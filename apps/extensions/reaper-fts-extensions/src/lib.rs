@@ -140,7 +140,7 @@ static APP: OnceLock<Fragile<App>> = OnceLock::new();
 
 // ── Existing modules (not yet DawModule) ─────────────────────────────────────
 
-mod actions;
+pub mod actions;
 mod architect_actions;
 mod continuous_action;
 mod error;
