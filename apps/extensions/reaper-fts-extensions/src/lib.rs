@@ -705,6 +705,11 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     #[cfg(feature = "mod-session")]
     {
         session::setlist_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
+        // Now the ONLY registration of FTS_SESSION_TOGGLE_PLAYBACK /
+        // _TOGGLE_SONG_LOOP: the legacy `session_actions` entries that used
+        // to declare them are gone, and they never had a dispatch arm in
+        // `daw_module`'s chain — the commands existed but did nothing.
+        session::playback_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         session::keyflow_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         session::keyflow_scaffold::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         daw_actions::preroll::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
