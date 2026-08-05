@@ -709,7 +709,16 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
         session::keyflow_scaffold::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         session::preroll_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         session::auto_color_actions::register_actions(&daw_reaper::Reaper);
-        session::track_manager_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
+        // No per-module wrapper: the `#[architect::actions]` macro emits
+        // the registration fn, and the "these live under Session" nesting
+        // is composed here (where that fact belongs) by wrapping the
+        // backend once, rather than each action trait naming its parent.
+        session::track_manager_actions::register_track_manager_actions(
+            &architect::action::ScopedActionBackend::new(daw_reaper::Reaper, "SESSION", "Session"),
+            std::sync::Arc::new(session::track_manager_actions::TrackManager::new(
+                daw_reaper::Reaper,
+            )),
+        );
         session::mode_actions::register_actions(&daw_reaper::Reaper);
         session::take_ranking::register_actions(&daw_reaper::Reaper);
         session::record_actions::register_actions(&daw_reaper::Reaper);
