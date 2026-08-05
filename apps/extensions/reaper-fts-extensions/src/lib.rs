@@ -707,8 +707,8 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
         session::setlist_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         session::keyflow_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
         session::keyflow_scaffold::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
-        session::preroll_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
-        session::auto_color_actions::register_actions(&daw_reaper::Reaper);
+        daw_actions::preroll::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
+        daw_actions::auto_color::register_actions(&daw_reaper::Reaper);
         // No per-module wrapper: the `#[architect::actions]` macro emits
         // the registration fn, and the "these live under Session" nesting
         // is composed here (where that fact belongs) by wrapping the
@@ -720,9 +720,9 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
             )),
         );
         session::mode_actions::register_actions(&daw_reaper::Reaper);
-        session::take_ranking::register_actions(&daw_reaper::Reaper);
-        session::record_actions::register_actions(&daw_reaper::Reaper);
-        session::group_actions::register_actions(&daw_reaper::Reaper);
+        daw_actions::take_ranking::register_actions(&daw_reaper::Reaper);
+        daw_actions::record::register_actions(&daw_reaper::Reaper);
+        daw_actions::groups::register_actions(&daw_reaper::Reaper);
         dynamic_template::daw_module::register_architect_actions(&daw_reaper::Reaper);
     }
 

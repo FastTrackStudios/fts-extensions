@@ -78,6 +78,7 @@ keyflow-orchestra = { workspace = true, optional = true }
 # daw-reaper.
 daw = { workspace = true, features = ["reaper"] }
 daw-reaper.workspace = true
+daw-actions.workspace = true
 daw-extension-runtime = { workspace = true }
 
 # Typed parser/serializer for `reaper-menu.ini`. Used by `mode_toolbars`
