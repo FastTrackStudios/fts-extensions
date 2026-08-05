@@ -37,7 +37,7 @@ use crate::tempo::{
 };
 use fts_extensions_actions::{
     FtsActions, FtsActionsActions, FtsTempoGridActions, FtsTempoGridActionsActions,
-    register_fts_actions_actions, register_fts_tempo_grid_actions_actions,
+    register_fts_actions, register_fts_tempo_grid_actions,
 };
 
 /// Zero-sized backend for both traits above — every method forwards to the
@@ -173,6 +173,6 @@ impl FtsActions for FtsActionsImpl {
 /// `ActionBackend` — this function is backend-agnostic).
 pub fn register_actions<B: architect::action::ActionBackend + ?Sized>(backend: &B) {
     let imp = std::sync::Arc::new(FtsActionsImpl);
-    register_fts_tempo_grid_actions_actions(backend, imp.clone());
-    register_fts_actions_actions(backend, imp);
+    register_fts_tempo_grid_actions(backend, imp.clone());
+    register_fts_actions(backend, imp);
 }
