@@ -5,7 +5,10 @@ edition.workspace = true
 description = "FTS Extensions — standalone REAPER extension providing utility actions (cdylib)"
 
 [lib]
-crate-type = ["cdylib"]
+# `rlib` alongside the cdylib so integration tests can link the crate and
+# call `register_all_architect_actions` directly (tests/action_ids.rs).
+# REAPER still loads the cdylib; the rlib is build-time only.
+crate-type = ["cdylib", "rlib"]
 name = "reaper_fts_extensions"
 path = "src/lib.rs"
 
@@ -78,6 +81,7 @@ keyflow-orchestra = { workspace = true, optional = true }
 # daw-reaper.
 daw = { workspace = true, features = ["reaper"] }
 daw-reaper.workspace = true
+daw-actions.workspace = true
 daw-extension-runtime = { workspace = true }
 
 # Typed parser/serializer for `reaper-menu.ini`. Used by `mode_toolbars`

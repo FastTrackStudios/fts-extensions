@@ -6,7 +6,7 @@
 //! back inline.
 
 use reaper_low::{Swell, raw};
-use session::mode_actions::{self, Mode};
+use session::modes::{self as mode_actions, Mode};
 
 const TPM_RETURNCMD: std::os::raw::c_int = 0x0100;
 const TPM_NONOTIFY: std::os::raw::c_int = 0x0080;

@@ -140,7 +140,7 @@ static APP: OnceLock<Fragile<App>> = OnceLock::new();
 
 // ── Existing modules (not yet DawModule) ─────────────────────────────────────
 
-mod actions;
+pub mod actions;
 mod architect_actions;
 mod continuous_action;
 mod error;
@@ -596,7 +596,7 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     // correct mode and there's no flash of the default Organize mode.
     #[cfg(feature = "mod-session")]
     {
-        if let Some(mode) = session::mode_actions::restore_persisted_mode() {
+        if let Some(mode) = session::modes::restore_persisted_mode() {
             info!(mode = %mode, "Restored persisted session mode");
         } else {
             info!("No persisted session mode — staying on default");
@@ -692,30 +692,8 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
 
     register_actions_sync(&all_defs, modules, panels);
 
-    // ── architect::action registration (additive) ───────────────────────
-    // New declarative action layer alongside the legacy `ActionDefs` path
-    // above. Every action here is ALSO already registered by
-    // `register_actions_sync` / `module::collect_actions` via the modules'
-    // existing `DawModule::actions()` — this second pass re-registers the
-    // same command ids through `daw_reaper::Reaper`'s new
-    // `architect::action::ActionBackend` impl so the metadata (description/
-    // category/group) exists, without removing the legacy path (REAPER's
-    // registry is idempotent per command id — see `register_action_main_thread`).
-    architect_actions::register_actions(&daw_reaper::Reaper);
-    #[cfg(feature = "mod-session")]
-    {
-        session::setlist_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
-        session::keyflow_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
-        session::keyflow_scaffold::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
-        session::preroll_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
-        session::auto_color_actions::register_actions(&daw_reaper::Reaper);
-        session::track_manager_actions::register_actions(&daw_reaper::Reaper, daw_reaper::Reaper);
-        session::mode_actions::register_actions(&daw_reaper::Reaper);
-        session::take_ranking::register_actions(&daw_reaper::Reaper);
-        session::record_actions::register_actions(&daw_reaper::Reaper);
-        session::group_actions::register_actions(&daw_reaper::Reaper);
-        dynamic_template::daw_module::register_architect_actions(&daw_reaper::Reaper);
-    }
+    // ── architect::action registration ──────────────────────────────────
+    register_all_architect_actions(&daw_reaper::Reaper);
 
     let app = APP.get().unwrap().get();
     let mut session = app.session.borrow_mut();
@@ -818,4 +796,32 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
 
     info!(modules = module_count, "FTS Extensions startup scheduled");
     Ok(())
+}
+
+// ── architect action registration ───────────────────────────────────────────
+
+/// Register every `#[architect::actions]` action in the tree against
+/// `backend`.
+///
+/// The single place that knows the full set. Splitting it out of
+/// `plugin_main` means a test can pass a collecting backend and assert
+/// invariants over the real registration set (see
+/// `tests/action_ids.rs`) — the legacy path's silent gaps
+/// (`FTS_SESSION_TOGGLE_PLAYBACK` registered but never dispatched) were
+/// invisible precisely because this list only ever ran inside REAPER.
+///
+/// Each crate exposes one `register_all_actions`; adding a module there
+/// reaches every host, rather than waiting for each call site to add a
+/// line.
+pub fn register_all_architect_actions<B>(backend: &B)
+where
+    B: architect::action::ActionBackend + Clone,
+{
+    architect_actions::register_actions(backend);
+    #[cfg(feature = "mod-session")]
+    {
+        session::register_all_actions(backend, daw_reaper::Reaper);
+        daw_actions::register_all_actions(backend, daw_reaper::Reaper);
+        dynamic_template::daw_module::register_architect_actions(backend);
+    }
 }

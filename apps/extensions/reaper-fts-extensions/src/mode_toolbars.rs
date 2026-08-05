@@ -9,7 +9,7 @@
 use reaper_config::menu::{
     ActionItem, CommandId, IconSpec, MenuConfig, MenuItem, MenuSection, MenuSectionId,
 };
-use session::mode_actions::Mode;
+use session::modes::Mode;
 use std::path::Path;
 
 /// Number of floating toolbars reserved per mode that opts in via
