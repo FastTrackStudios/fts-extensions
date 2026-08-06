@@ -58,13 +58,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         ))
         .with_headless(runner_headless);
 
-    let packages = vec![TestPackage {
-        package: "fts-extensions".into(),
-        features: vec![],
-        test_threads: 1,
-        default_skips: vec![],
-        test_binary: Some("extension_loads".into()),
-    }];
+    let packages = vec![
+        TestPackage {
+            package: "fts-extensions".into(),
+            features: vec![],
+            test_threads: 1,
+            default_skips: vec![],
+            test_binary: Some("extension_loads".into()),
+        },
+        // The expression editor's REAPER-only coverage: panel docking,
+        // finding REAPER's selection, and writes reaching a real take.
+        // Its logic is tested against the standalone backend instead.
+        TestPackage {
+            package: "fts-extensions".into(),
+            features: vec![],
+            test_threads: 1,
+            default_skips: vec![],
+            test_binary: Some("expression_editor".into()),
+        },
+    ];
 
     // fts-extensions is built with `host-hooks` (default feature): it embeds
     // the daw socket host itself. Do NOT install daw-bridge alongside it —

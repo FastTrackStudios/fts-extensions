@@ -18,6 +18,7 @@ default = [
     "host-hooks",
     "mod-session",
     "mod-input",
+    "mod-expression-editor",
     "mod-launcher",
     "poll-broadcast",
     "ui-dock",
@@ -31,6 +32,7 @@ mod-launcher = ["dep:fts-launcher", "ui-dock"]
 mod-session = ["dep:session", "dep:dynamic-template"]
 mod-sync = ["dep:daw-synchronization"]
 mod-input = ["dep:reaper-input"]
+mod-expression-editor = ["dep:expression-editor-reaper"]
 # Live MIDI mirror: source-of-truth tracks with hidden, library-timing-
 # adjusted twins regenerated on edit (keyflow-orchestra mirror pass).
 # Off by default — kept as the fallback path for third-party samplers
@@ -71,6 +73,7 @@ dynamic-template = { workspace = true, optional = true }
 # surfaces during plugin_main, where the REAPER host window isn't ready
 # yet and surface creation OOMs.
 reaper-input = { workspace = true, optional = true }
+expression-editor-reaper = { workspace = true, optional = true }
 daw-synchronization = { workspace = true, optional = true }
 # Orchestral mirror pass (pure Rust, no Reaper deps) — in-tree crate.
 keyflow-orchestra = { workspace = true, optional = true }
@@ -110,6 +113,11 @@ tracing-appender.workspace = true
 
 [dev-dependencies]
 daw = { workspace = true, features = ["reaper", "test-harness"] }
+# The expression editor's REAPER coverage lives here rather than in its
+# own crate, because the panel only exists once this extension has
+# registered it.
+expression-editor-core = { workspace = true }
+expression-editor-reaper = { workspace = true }
 eyre.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 # Integration tests assert against the canonical ruler-lane layout
