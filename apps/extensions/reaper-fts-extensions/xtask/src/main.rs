@@ -52,11 +52,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // by the wrapper script inheriting it.
     let runner_headless = if virtual_mode { true } else { headless };
 
-    let runner = TestRunner::new(&resources_dir)
+    let mut runner = TestRunner::new(&resources_dir)
         .with_extension_log(format!(
             "{home}/.local/state/fasttrackstudio/reaper-fts-extensions.log"
         ))
         .with_headless(runner_headless);
+
+    // `--virtual` brings up our own Xvfb + window manager. It used to
+    // depend on an `fts-test` launcher that is not installed
+    // everywhere, and silently fell back to headless when missing —
+    // which meant GUI tests appeared to run and could never pass.
+    if virtual_mode {
+        runner = runner.with_virtual_display()?;
+    }
 
     let packages = vec![
         TestPackage {
@@ -101,7 +109,23 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     install_configs(&repo_root, &resources_dir)?;
 
     runner.build_test_packages(&repo_root, &packages)?;
+    // REAPER restores whatever dialogs were open when its config was
+    // last saved — usually the Actions list — and they cover the
+    // arrange view and any panel under test. Close them before the run.
+    let shots_dir = repo_root.join("target/reaper-shots");
+    // The recorder sweeps stray dialogs itself for the first few
+    // seconds — REAPER restores them after it starts, so closing once
+    // before the run is too early to catch anything.
+    let recording = runner
+        .virtual_display()
+        .map(|vd| vd.record(&shots_dir, std::time::Duration::from_millis(500)));
+
     let tests_passed = runner.run_reaper_tests(&packages, filter.as_deref())?;
+
+    if let Some(rec) = recording {
+        let kept = rec.finish(&shots_dir);
+        println!("  Screenshots: {kept} frames in {}", shots_dir.display());
+    }
 
     if tests_passed {
         println!("\n  All tests passed!");
