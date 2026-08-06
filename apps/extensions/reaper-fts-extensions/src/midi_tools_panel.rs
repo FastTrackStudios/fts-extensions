@@ -88,3 +88,31 @@ pub fn action_defs() -> [ActionDef; 2] {
         .in_menu(),
     ]
 }
+
+/// Also expose the panel actions in REAPER's MIDI editor section.
+///
+/// Registering an action the normal way puts it in the Main section only.
+/// That's enough to find it in the action list and bind a global key, but
+/// the MIDI editor's own toolbar and key map are a *different section* —
+/// a MIDI-toolbar button pointing at a Main-only action resolves to
+/// nothing and silently does nothing when clicked, which is exactly what
+/// it did.
+///
+/// The command name is the same, so this reuses the command id and the
+/// handler already registered for it; all it adds is the section entry.
+///
+/// Must be called from the main thread, after the main registration.
+pub fn register_in_midi_editor_section() {
+    use daw_reaper::action_registry::{
+        MIDI_EDITOR_SECTION_ID, register_action_in_section_main_thread,
+    };
+
+    for (id, label, panel) in [
+        ("FTS_MIDI_VELOCITY", "FTS: MIDI Velocity", "FTS_MIDI_VELOCITY"),
+        ("FTS_MIDI_ARP", "FTS: MIDI Arpeggiator", "FTS_MIDI_ARP"),
+    ] {
+        register_action_in_section_main_thread(id, label, MIDI_EDITOR_SECTION_ID, move || {
+            daw::reaper_ui::dock::toggle_panel(panel);
+        });
+    }
+}

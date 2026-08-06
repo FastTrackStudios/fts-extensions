@@ -702,6 +702,12 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
 
     register_actions_sync(&all_defs, modules, panels);
 
+    // After the main registration: also expose the midi-tools panels in
+    // REAPER's MIDI editor section, so their toolbar buttons there
+    // actually resolve. See `midi_tools_panel::register_in_midi_editor_section`.
+    #[cfg(feature = "ui-dock")]
+    midi_tools_panel::register_in_midi_editor_section();
+
     // ── architect::action registration ──────────────────────────────────
     register_all_architect_actions(&daw_reaper::Reaper);
 
