@@ -180,6 +180,14 @@ pub fn build_action_defs() -> ActionDefs {
         ),
         toggle_menu_action("FTS_TEST_TOGGLE", "Test Toggle", toggle_test_toggle_handler),
         // ── Modes ────────────────────────────────────────────────────────────
+        // One toolbar button for every key. Drops a key change at the
+        // edit cursor on the KEY track.
+        #[cfg(feature = "mod-session")]
+        menu_action(
+            "FTS_KEY_SELECTOR",
+            "Key Selector",
+            crate::key_selector::show_key_menu,
+        ),
         #[cfg(feature = "mod-session")]
         menu_action(
             "FTS_MODE_SELECTOR",
