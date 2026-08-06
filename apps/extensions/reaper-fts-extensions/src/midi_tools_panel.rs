@@ -111,8 +111,11 @@ pub fn register_in_midi_editor_section() {
         ("FTS_MIDI_VELOCITY", "FTS: MIDI Velocity", "FTS_MIDI_VELOCITY"),
         ("FTS_MIDI_ARP", "FTS: MIDI Arpeggiator", "FTS_MIDI_ARP"),
     ] {
-        register_action_in_section_main_thread(id, label, MIDI_EDITOR_SECTION_ID, move || {
-            daw::reaper_ui::dock::toggle_panel(panel);
-        });
+        register_action_in_section_main_thread(
+            id,
+            label,
+            MIDI_EDITOR_SECTION_ID,
+            std::sync::Arc::new(move || daw::reaper_ui::dock::toggle_panel(panel)),
+        );
     }
 }
