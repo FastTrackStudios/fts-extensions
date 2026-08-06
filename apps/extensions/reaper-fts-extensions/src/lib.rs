@@ -328,6 +328,20 @@ fn initialize_daw(tokio_runtime: &tokio::runtime::Runtime) -> eyre::Result<Daw> 
                 session::daw_services::layer_control_surfaces(h)
             };
 
+            // The dock host is a different backend from `Reaper`, so it
+            // does not come in via `Reaper::into_router()` — it has to be
+            // merged explicitly. daw-bridge does this; this host did not,
+            // which meant every `DockHost` call from an external client
+            // (`is_visible`, `capture_panel_pixels`, `inject_ui_event`)
+            // hit a router with no such service and died decoding the
+            // reply — reported as a schema mismatch rather than "no such
+            // method", which sent the diagnosis a long way in the wrong
+            // direction.
+            #[cfg(feature = "ui-dock")]
+            let handler = handler.merge(daw::service::dock_host::layer(
+                daw::reaper_ui::ReaperDockHost::new(),
+            ));
+
             // Publish the same service router on a Unix socket so
             // external apps (CLI, desktop, mobile, audio-sync peers)
             // can call into the in-process surface. The publisher

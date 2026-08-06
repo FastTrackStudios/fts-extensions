@@ -21,20 +21,20 @@
 //!
 //! Nothing is simulated except the pointer's position.
 //!
-//! ## Currently blocked
+//! ## Running them
 //!
-//! These run but cannot pass yet: every `DockHost` call from an external
-//! client fails with
-//! `Incompatible("writer and reader schema kinds differ")` decoding
-//! `Result<_, VoxError<Infallible>>`. That is a vox schema-negotiation
-//! bug in the same family as the already-skipped
-//! `save_restore_layout_round_trip` and the broken `daw toolbar-live`
-//! verb — it is not about these tests or about `DockHandle` (converting
-//! it from a tuple struct to a named-field struct changes nothing).
+//! Skipped by default, for an environmental reason rather than a code
+//! one: this rig shares its REAPER profile (`~/fts-dev`) with the
+//! interactive dev instance, so if one is open the spawned REAPER
+//! contends with it and these fail on socket discovery instead of on
+//! what they assert. Close any dev REAPER first.
 //!
-//! They are registered as skips in the xtask so the suite stays green,
-//! and are worth keeping as-is: the moment `DockHost` is callable, this
-//! becomes the only coverage that exercises the shipping renderer.
+//! They were previously blocked by a real bug — every `DockHost` call
+//! failed to decode — which turned out to be that fts-extensions never
+//! mounted the `dock_host` layer into its router at all. `daw-bridge`
+//! mounts it; this host did not, so the calls reached a router with no
+//! such service and the reply failed to decode. Reported as a schema
+//! mismatch, which is why it read like a vox negotiation bug.
 //!
 //! ```sh
 //! just reaper integration-test panel_

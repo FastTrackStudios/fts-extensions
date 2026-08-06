@@ -74,15 +74,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             package: "fts-extensions".into(),
             features: vec![],
             test_threads: 1,
-            // KNOWN BROKEN (vox schema negotiation, not these tests): every
-            // `DockHost` call from an external client dies with
-            // `Incompatible("writer and reader schema kinds differ")` on
-            // `Result<_, VoxError<Infallible>>`. Same family as the skipped
-            // `save_restore_layout_round_trip` and the `toolbar-live` CLI
-            // verb. The tests below are correct and run — they reach the
-            // real panel through the real event path — and will pass as
-            // soon as DockHost is callable. Run them explicitly with
-            // `just reaper integration-test panel_` to check.
+            // Skipped by default because this rig shares its REAPER
+            // profile (~/fts-dev) with the interactive dev instance: if
+            // one is open, the spawned REAPER contends with it and these
+            // fail on socket discovery rather than on anything they
+            // assert. The DockHost bug that used to block them is fixed
+            // (the layer is mounted now) — run them against a clean rig:
+            //
+            //     just reaper integration-test panel_
             default_skips: vec![
                 "panel_toggles_via_its_action".into(),
                 "panel_actually_renders_in_reaper".into(),
