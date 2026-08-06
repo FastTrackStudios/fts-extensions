@@ -91,6 +91,12 @@ reaper-config = { workspace = true }
 # FTS design system (shadcn-ui clone for Dioxus)
 fts-ui = { workspace = true }
 
+# The midi-tools panels + their REAPER-backed sinks. `midi-tools-ui` is
+# Blitz-safe (inline styles, propless roots); `midi-tools-daw` is the half
+# that knows about takes.
+midi-tools-ui = { workspace = true }
+midi-tools-daw = { workspace = true }
+
 # REAPER entry point machinery
 reaper-low.workspace = true
 reaper-medium.workspace = true

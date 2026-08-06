@@ -150,6 +150,8 @@ mod midi_flam;
 mod midi_mode;
 #[cfg(feature = "mod-input")]
 mod midi_mode_input;
+#[cfg(feature = "ui-dock")]
+mod midi_tools_panel;
 #[cfg(feature = "mod-mirror")]
 mod mirror;
 #[cfg(all(feature = "mod-session", feature = "mod-input"))]
@@ -635,7 +637,10 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
         all_actions.insert(id.clone(), handler.clone());
     }
     #[cfg(feature = "ui-dock")]
-    for action in ui_test_panel::action_defs() {
+    for action in ui_test_panel::action_defs()
+        .into_iter()
+        .chain(midi_tools_panel::action_defs())
+    {
         let (id, _, handler, _, _) = action.into_tuple();
         all_actions.insert(id, handler);
     }
@@ -654,6 +659,7 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     all_defs.extend(
         ui_test_panel::action_defs()
             .into_iter()
+            .chain(midi_tools_panel::action_defs())
             .map(|a| a.into_tuple()),
     );
 
@@ -661,6 +667,8 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     let mut panels = module::collect_panels(&modules);
     #[cfg(feature = "ui-dock")]
     panels.extend(ui_test_panel::panel_defs());
+    #[cfg(feature = "ui-dock")]
+    panels.extend(midi_tools_panel::panel_defs());
 
     let session = ReaperSession::load(context);
     let app = App {
