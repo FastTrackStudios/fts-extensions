@@ -155,6 +155,8 @@ mod mirror;
 #[cfg(all(feature = "mod-session", feature = "mod-input"))]
 mod mode_input;
 #[cfg(feature = "mod-session")]
+mod key_selector;
+#[cfg(feature = "mod-session")]
 mod mode_selector;
 #[cfg(feature = "mod-session")]
 mod mode_toolbars;
