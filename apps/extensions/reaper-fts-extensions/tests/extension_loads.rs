@@ -620,3 +620,31 @@ async fn session_keyflow_section_insert_truncates_overlapping_section(
 
     Ok(())
 }
+
+/// The midi-tools panels must be reachable as REAPER actions.
+///
+/// This is the whole point of `midi_tools_panel`: the crates and their
+/// standalone examples proved the tools work, but until the actions
+/// register there is no way to reach them from inside REAPER. If this
+/// fails, the feature is invisible to the user however well it works.
+#[reaper_test]
+async fn midi_tools_actions_are_registered(ctx: &ReaperTestContext) -> eyre::Result<()> {
+    wait_for_ready(ctx).await?;
+    let actions = ctx.daw.action_registry();
+
+    for id in ["FTS_MIDI_VELOCITY", "FTS_MIDI_ARP"] {
+        let cmd_id = actions
+            .lookup_command_id(id)
+            .await?
+            .ok_or_else(|| eyre::eyre!("{id} is not registered"))?;
+        ctx.log(&format!("{id} → command id {cmd_id}"));
+        eyre::ensure!(cmd_id > 0, "{id} registered with a null command id");
+
+        eyre::ensure!(
+            actions.is_in_action_list(id).await?,
+            "{id} is registered but missing from the action list — it would \
+             be unbindable"
+        );
+    }
+    Ok(())
+}

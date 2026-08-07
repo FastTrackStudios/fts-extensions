@@ -150,10 +150,14 @@ mod midi_flam;
 mod midi_mode;
 #[cfg(feature = "mod-input")]
 mod midi_mode_input;
+#[cfg(feature = "ui-dock")]
+mod midi_tools_panel;
 #[cfg(feature = "mod-mirror")]
 mod mirror;
 #[cfg(all(feature = "mod-session", feature = "mod-input"))]
 mod mode_input;
+#[cfg(feature = "mod-session")]
+mod key_selector;
 #[cfg(feature = "mod-session")]
 mod mode_selector;
 #[cfg(feature = "mod-session")]
@@ -323,6 +327,20 @@ fn initialize_daw(tokio_runtime: &tokio::runtime::Runtime) -> eyre::Result<Daw> 
                 // peers — CLI, desktop, mobile — can call them.
                 session::daw_services::layer_control_surfaces(h)
             };
+
+            // The dock host is a different backend from `Reaper`, so it
+            // does not come in via `Reaper::into_router()` — it has to be
+            // merged explicitly. daw-bridge does this; this host did not,
+            // which meant every `DockHost` call from an external client
+            // (`is_visible`, `capture_panel_pixels`, `inject_ui_event`)
+            // hit a router with no such service and died decoding the
+            // reply — reported as a schema mismatch rather than "no such
+            // method", which sent the diagnosis a long way in the wrong
+            // direction.
+            #[cfg(feature = "ui-dock")]
+            let handler = handler.merge(daw::service::dock_host::layer(
+                daw::reaper_ui::ReaperDockHost::new(),
+            ));
 
             // Publish the same service router on a Unix socket so
             // external apps (CLI, desktop, mobile, audio-sync peers)
@@ -635,7 +653,10 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
         all_actions.insert(id.clone(), handler.clone());
     }
     #[cfg(feature = "ui-dock")]
-    for action in ui_test_panel::action_defs() {
+    for action in ui_test_panel::action_defs()
+        .into_iter()
+        .chain(midi_tools_panel::action_defs())
+    {
         let (id, _, handler, _, _) = action.into_tuple();
         all_actions.insert(id, handler);
     }
@@ -654,6 +675,7 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     all_defs.extend(
         ui_test_panel::action_defs()
             .into_iter()
+            .chain(midi_tools_panel::action_defs())
             .map(|a| a.into_tuple()),
     );
 
@@ -661,6 +683,8 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     let mut panels = module::collect_panels(&modules);
     #[cfg(feature = "ui-dock")]
     panels.extend(ui_test_panel::panel_defs());
+    #[cfg(feature = "ui-dock")]
+    panels.extend(midi_tools_panel::panel_defs());
 
     let session = ReaperSession::load(context);
     let app = App {
@@ -693,6 +717,12 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     }
 
     register_actions_sync(&all_defs, modules, panels);
+
+    // After the main registration: also expose the midi-tools panels in
+    // REAPER's MIDI editor section, so their toolbar buttons there
+    // actually resolve. See `midi_tools_panel::register_in_midi_editor_section`.
+    #[cfg(feature = "ui-dock")]
+    midi_tools_panel::register_in_midi_editor_section();
 
     // ── architect::action registration ──────────────────────────────────
     register_all_architect_actions(&daw_reaper::Reaper);

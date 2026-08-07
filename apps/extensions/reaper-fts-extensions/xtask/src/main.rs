@@ -84,6 +84,29 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             default_skips: vec![],
             test_binary: Some("expression_editor".into()),
         },
+        // The midi-tools panels driven through DockHost — the only tests
+        // that exercise the real Blitz renderer and the real event path.
+        // Separate binary, so it needs its own entry: `test_binary` is a
+        // single name, not a filter.
+        TestPackage {
+            package: "fts-extensions".into(),
+            features: vec![],
+            test_threads: 1,
+            // Skipped by default because this rig shares its REAPER
+            // profile (~/fts-dev) with the interactive dev instance: if
+            // one is open, the spawned REAPER contends with it and these
+            // fail on socket discovery rather than on anything they
+            // assert. The DockHost bug that used to block them is fixed
+            // (the layer is mounted now) — run them against a clean rig:
+            //
+            //     just reaper integration-test panel_
+            default_skips: vec![
+                "panel_toggles_via_its_action".into(),
+                "panel_actually_renders_in_reaper".into(),
+                "panel_click_shapes_the_take".into(),
+            ],
+            test_binary: Some("midi_tools_panel".into()),
+        },
     ];
 
     // fts-extensions is built with `host-hooks` (default feature): it embeds
