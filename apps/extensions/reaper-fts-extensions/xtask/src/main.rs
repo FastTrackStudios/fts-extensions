@@ -74,6 +74,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             default_skips: vec![],
             test_binary: Some("extension_loads".into()),
         },
+        // The expression editor's REAPER-only coverage: panel docking,
+        // finding REAPER's selection, and writes reaching a real take.
+        // Its logic is tested against the standalone backend instead.
+        TestPackage {
+            package: "fts-extensions".into(),
+            features: vec![],
+            test_threads: 1,
+            default_skips: vec![],
+            test_binary: Some("expression_editor".into()),
+        },
         // The midi-tools panels driven through DockHost — the only tests
         // that exercise the real Blitz renderer and the real event path.
         // Separate binary, so it needs its own entry: `test_binary` is a
