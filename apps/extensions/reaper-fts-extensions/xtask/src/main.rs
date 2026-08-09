@@ -84,6 +84,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             default_skips: vec![],
             test_binary: Some("expression_editor".into()),
         },
+        // Take envelopes in REAPER: creation by action, the
+        // enumeration fallback, and the selection surviving both.
+        // Nothing here has a standalone equivalent — the behaviour under
+        // test is REAPER's own.
+        TestPackage {
+            package: "fts-extensions".into(),
+            features: vec![],
+            test_threads: 1,
+            default_skips: vec![],
+            test_binary: Some("take_envelope".into()),
+        },
         // The midi-tools panels driven through DockHost — the only tests
         // that exercise the real Blitz renderer and the real event path.
         // Separate binary, so it needs its own entry: `test_binary` is a
