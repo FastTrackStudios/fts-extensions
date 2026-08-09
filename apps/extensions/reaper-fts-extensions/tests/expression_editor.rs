@@ -84,6 +84,24 @@ async fn pitches(item: &ItemHandle) -> eyre::Result<Vec<u8>> {
 
 #[reaper_test(isolated)]
 async fn the_panel_registers_and_toggles(ctx: &ReaperTestContext) -> eyre::Result<()> {
+    // Start from a known state. `isolated` gives each test its own
+    // project tab, but a panel is not project state — it belongs to the
+    // one REAPER these tests share, so whatever ran before may well have
+    // left it on screen. Asserting "visible after one toggle" without
+    // this passes or fails depending on test order, which is the kind of
+    // green that stops meaning anything.
+    let panel = ctx
+        .daw
+        .dock_host()
+        .register_dock(
+            expression_editor_reaper::PANEL_ID,
+            expression_editor_reaper::PANEL_ID,
+            daw::service::dock_host::DockKind::Tabbed,
+        )
+        .await?;
+    ctx.daw.dock_host().hide(panel).await?;
+    settle().await;
+
     // Registration is the thing that silently does not happen when the
     // reaper-dioxus service has not come up.
     action(ctx, "FTS_EXPRESSION_EDITOR_TOGGLE").await?;

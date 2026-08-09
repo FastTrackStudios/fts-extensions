@@ -103,19 +103,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             package: "fts-extensions".into(),
             features: vec![],
             test_threads: 1,
-            // Skipped by default because this rig shares its REAPER
-            // profile (~/fts-dev) with the interactive dev instance: if
-            // one is open, the spawned REAPER contends with it and these
-            // fail on socket discovery rather than on anything they
-            // assert. The DockHost bug that used to block them is fixed
-            // (the layer is mounted now) — run them against a clean rig:
+            // `panel_click_shapes_the_take` alone stays skipped. The
+            // other two ran green once dock-host calls started reaching
+            // REAPER's main thread — the panel opens, renders and
+            // toggles under RPC now.
             //
-            //     just reaper integration-test panel_
-            default_skips: vec![
-                "panel_toggles_via_its_action".into(),
-                "panel_actually_renders_in_reaper".into(),
-                "panel_click_shapes_the_take".into(),
-            ],
+            // What is left is not thread affinity: the click lands at
+            // the right place (the CURVE row's first chip really is at
+            // panel-local 41,219 — checked against a capture) and the
+            // velocities do not move, so `inject_ui_event` is not
+            // producing an event the component reacts to. Blitz
+            // dispatches pointer events; a handler listening for mouse
+            // ones never fires.
+            default_skips: vec!["panel_click_shapes_the_take".into()],
             test_binary: Some("midi_tools_panel".into()),
         },
     ];
