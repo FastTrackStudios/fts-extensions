@@ -103,19 +103,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             package: "fts-extensions".into(),
             features: vec![],
             test_threads: 1,
-            // `panel_click_shapes_the_take` alone stays skipped. The
-            // other two ran green once dock-host calls started reaching
-            // REAPER's main thread — the panel opens, renders and
-            // toggles under RPC now.
+            // All three run. `panel_click_shapes_the_take` was the last
+            // holdout, and neither suspect was right: the dock-host RPC
+            // works (that was a missing layer mount, since fixed) and
+            // the event path was never broken — Blitz raises `click`
+            // from a primary PointerUp, and the injected pointer landed
+            // squarely on the `curve-rise` button.
             //
-            // What is left is not thread affinity: the click lands at
-            // the right place (the CURVE row's first chip really is at
-            // panel-local 41,219 — checked against a capture) and the
-            // velocities do not move, so `inject_ui_event` is not
-            // producing an event the component reacts to. Blitz
-            // dispatches pointer events; a handler listening for mouse
-            // ones never fires.
-            default_skips: vec!["panel_click_shapes_the_take".into()],
+            // It was leaked selection. `select` is additive and these
+            // tests share a project, so the panel bound to the *earlier*
+            // test's item and shaped a take nobody asserted on. The
+            // helper now deselects first.
+            default_skips: vec![],
             test_binary: Some("midi_tools_panel".into()),
         },
     ];
