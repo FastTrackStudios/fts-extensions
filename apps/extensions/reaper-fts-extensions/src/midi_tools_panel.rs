@@ -13,8 +13,8 @@
 
 use daw::module::{ActionDef, DockPosition, PanelComponent, PanelDef, PanelRenderer};
 use daw::reaper_ui::prelude::*;
-use midi_tools_daw::{DawArpSink, DawVelocitySink};
-use midi_tools_ui::{ArpPanel, ArpSinkHandle, SinkHandle, VelocityPanel};
+use expression_editor_daw::midi_tools_sink::{DawArpSink, DawVelocitySink};
+use expression_editor_ui::{ArpPanel, ArpSinkHandle, SinkHandle, VelocityPanel};
 
 /// Blitz renders these panels without a stylesheet, so the only thing
 /// worth injecting is the bits Blitz gets wrong on its own. The panels
