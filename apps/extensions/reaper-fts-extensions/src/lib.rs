@@ -284,6 +284,11 @@ extern "C" fn timer_callback() {
             });
         }
 
+        // Expression editor live sync: follow the item selection and
+        // write settled edits back to the take, ~30Hz, panel-visible only.
+        #[cfg(feature = "mod-expression-editor")]
+        catch_panic("expression_editor_poll", expression_editor_reaper::poll);
+
         catch_panic("_fire_timer_callbacks", daw::_fire_timer_callbacks);
         catch_panic(
             "process_pending_actions",

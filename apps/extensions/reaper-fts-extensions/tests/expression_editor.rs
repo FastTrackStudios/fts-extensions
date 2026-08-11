@@ -62,6 +62,26 @@ async fn seed_item(ctx: &ReaperTestContext) -> eyre::Result<ItemHandle> {
     Ok(item)
 }
 
+/// Bring the editor up on the current selection, whatever a previous
+/// test left on screen.
+///
+/// Panel visibility is global to the REAPER instance and the OPEN
+/// action is a toggle, so firing it blind closes a panel another test
+/// left open. When the panel is already visible the live-sync poll has
+/// (or will have) loaded the selection by itself; when it is hidden,
+/// one OPEN loads and shows it.
+async fn open_on_selection(ctx: &ReaperTestContext) -> eyre::Result<()> {
+    if !ctx
+        .is_panel_visible(expression_editor_reaper::PANEL_ID)
+        .await?
+    {
+        action(ctx, "FTS_EXPRESSION_EDITOR_OPEN").await?;
+    }
+    // Either path: give the poll a tick to follow the selection.
+    settle().await;
+    Ok(())
+}
+
 async fn action(ctx: &ReaperTestContext, id: &str) -> eyre::Result<()> {
     ctx.daw.action_registry().execute_action(id).await?;
     settle().await;
@@ -120,7 +140,7 @@ async fn opening_on_a_selection_shows_the_panel(ctx: &ReaperTestContext) -> eyre
     item.select().await?;
     settle().await;
 
-    action(ctx, "FTS_EXPRESSION_EDITOR_OPEN").await?;
+    open_on_selection(ctx).await?;
     ctx.assert_panel_visible(expression_editor_reaper::PANEL_ID)
         .await?;
     // Opening must not disturb the material.
@@ -136,7 +156,7 @@ async fn a_load_edit_and_write_round_trip_reaches_the_take(
     item.select().await?;
     settle().await;
 
-    action(ctx, "FTS_EXPRESSION_EDITOR_OPEN").await?;
+    open_on_selection(ctx).await?;
     // The edit runs inside REAPER, through the editor's own Edit
     // pipeline — the only way this proves the pipeline works.
     action(ctx, "FTS_EXPRESSION_EDITOR_TEST_TRANSPOSE").await?;
@@ -161,7 +181,7 @@ async fn a_write_with_no_edit_preserves_the_take(
     item.select().await?;
     settle().await;
 
-    action(ctx, "FTS_EXPRESSION_EDITOR_OPEN").await?;
+    open_on_selection(ctx).await?;
     action(ctx, "FTS_EXPRESSION_EDITOR_WRITE").await?;
 
     // Read → convert → write with no edit in between must be lossless.
@@ -177,7 +197,7 @@ async fn repeated_writes_replace_rather_than_append(
     let item = seed_item(ctx).await?;
     item.select().await?;
     settle().await;
-    action(ctx, "FTS_EXPRESSION_EDITOR_OPEN").await?;
+    open_on_selection(ctx).await?;
 
     // The failure mode a naive add-notes implementation has.
     action(ctx, "FTS_EXPRESSION_EDITOR_WRITE").await?;
@@ -191,23 +211,30 @@ async fn repeated_writes_replace_rather_than_append(
     Ok(())
 }
 
+/// The panel is live: an edit reaches the take by itself, without any
+/// explicit write action. This is the behaviour that replaced the old
+/// "reload discards unsaved edits" contract — with the sync poll there
+/// is no such thing as an unsaved edit for longer than the debounce.
 #[reaper_test(isolated)]
-async fn reload_makes_the_take_authoritative(ctx: &ReaperTestContext) -> eyre::Result<()> {
+async fn edits_reach_the_take_without_an_explicit_write(
+    ctx: &ReaperTestContext,
+) -> eyre::Result<()> {
     let item = seed_item(ctx).await?;
     item.select().await?;
     settle().await;
-    action(ctx, "FTS_EXPRESSION_EDITOR_OPEN").await?;
+    open_on_selection(ctx).await?;
 
-    // Edit, throw it away by reloading, then write: the take should be
-    // exactly what it started as.
     action(ctx, "FTS_EXPRESSION_EDITOR_TEST_TRANSPOSE").await?;
-    action(ctx, "FTS_EXPRESSION_EDITOR_RELOAD").await?;
-    action(ctx, "FTS_EXPRESSION_EDITOR_WRITE").await?;
+    // Longer than the poll's stable-ticks debounce (~250ms at 30Hz),
+    // so the auto-write has fired by the time we read the take.
+    settle().await;
+    settle().await;
 
+    let expected: Vec<u8> = SEEDED.iter().map(|p| p + 12).collect();
     assert_eq!(
         pitches(&item).await?,
-        SEEDED.to_vec(),
-        "reload discards the edit in favour of the take"
+        expected,
+        "the live sync wrote the transpose to the take on its own"
     );
     Ok(())
 }
