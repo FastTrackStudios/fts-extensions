@@ -100,6 +100,9 @@ fts-ui = { workspace = true }
 # that knows about takes.
 expression-editor-ui = { workspace = true }
 expression-editor-daw = { workspace = true }
+# Direct dep for the reaper-mouse.ini → editor MouseMap bridge
+# (expression_mouse.rs); already in the graph via expression-editor-ui.
+expression-editor-core = { workspace = true }
 
 # REAPER entry point machinery
 reaper-low.workspace = true

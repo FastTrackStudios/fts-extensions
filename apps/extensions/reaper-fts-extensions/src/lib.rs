@@ -152,6 +152,8 @@ mod midi_mode;
 mod midi_mode_input;
 #[cfg(feature = "ui-dock")]
 mod midi_tools_panel;
+#[cfg(all(feature = "mod-input", feature = "mod-expression-editor"))]
+mod expression_mouse;
 #[cfg(feature = "mod-mirror")]
 mod mirror;
 #[cfg(all(feature = "mod-session", feature = "mod-input"))]
@@ -642,6 +644,12 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
         midi_mode_input::install();
         info!("MIDI-editor mode → input workflow bridge installed");
     }
+
+    // Overlay the user's reaper-mouse.ini onto the expression editor's
+    // mouse maps, before any take is loaded — the map is captured when
+    // a session's mode is set.
+    #[cfg(all(feature = "mod-input", feature = "mod-expression-editor"))]
+    expression_mouse::install();
 
     // Collect actions from all modules after init has populated runtime state.
     let module_actions = module::collect_actions(&modules);
