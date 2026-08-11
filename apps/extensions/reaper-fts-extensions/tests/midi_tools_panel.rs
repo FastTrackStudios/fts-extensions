@@ -23,11 +23,11 @@
 //!
 //! ## Running them
 //!
-//! Skipped by default, for an environmental reason rather than a code
-//! one: this rig shares its REAPER profile (`~/fts-dev`) with the
-//! interactive dev instance, so if one is open the spawned REAPER
-//! contends with it and these fail on socket discovery instead of on
-//! what they assert. Close any dev REAPER first.
+//! One environmental caveat: this rig shares its REAPER profile
+//! (`~/fts-dev`) with the interactive dev instance, so if one is open
+//! the spawned REAPER contends with it and these fail on socket
+//! discovery instead of on what they assert. Close any dev REAPER
+//! first. They also need a display — run them under `--virtual`.
 //!
 //! They were previously blocked by a real bug — every `DockHost` call
 //! failed to decode — which turned out to be that fts-extensions never
@@ -92,14 +92,25 @@ async fn wait_visible(
     )
 }
 
-/// A MIDI item with `velocities` as eighth notes, selected so the panel
-/// binds to it.
+/// A MIDI item with `velocities` as eighth notes, the *only* selected
+/// item, so the panel binds to it.
+///
+/// The deselect is load-bearing. `ItemHandle::select` is additive — it
+/// selects, it does not *become* the selection — and these tests share
+/// one project, so without it an earlier test's item is still selected
+/// and comes first. `DawVelocitySink::open` binds to the **first**
+/// selected item, so the panel would edit a take nobody asserts on.
+///
+/// That was half of what kept `panel_click_shapes_the_take` skipped; the
+/// other half was the panel never rebinding at all, fixed in
+/// `EmbeddedView::remount`.
 async fn selected_take(
     ctx: &ReaperTestContext,
     name: &str,
     velocities: &[u8],
 ) -> eyre::Result<daw::rpc::TakeHandle> {
     let project = ctx.project().clone();
+    project.items().deselect_all().await?;
     let track = project.tracks().add(name, None).await?;
     let item = track
         .items()
@@ -234,9 +245,12 @@ async fn panel_actually_renders_in_reaper(ctx: &ReaperTestContext) -> eyre::Resu
 /// The headline: click a curve preset in the REAL panel, and the REAL
 /// take changes.
 ///
-/// This is the exact interaction that was silently broken — the widgets
-/// listened for `pointer*` while the dock dispatches `mouse*`. Everything
-/// headless passed; this is what tells the truth.
+/// This is the exact interaction that was once silently broken — the
+/// widgets listened for `pointer*` while the dock dispatched `mouse*`.
+/// Everything headless passed; this is what tells the truth.
+///
+/// It depends on `selected_take` leaving exactly one item selected —
+/// see the note there.
 ///
 /// Coordinates are panel-local and hand-derived from the layout: the
 /// "Rise" chip is the first entry of the CURVE row, which sits under the

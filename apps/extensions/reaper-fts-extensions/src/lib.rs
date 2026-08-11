@@ -588,6 +588,8 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
         daw_synchronization::daw_module::module(),
         #[cfg(feature = "mod-input")]
         reaper_input::daw_module::module(),
+        #[cfg(feature = "mod-expression-editor")]
+        expression_editor_reaper::module(),
     ];
     let module_count = modules.len();
 

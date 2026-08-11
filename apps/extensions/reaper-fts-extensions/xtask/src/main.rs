@@ -74,6 +74,27 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             default_skips: vec![],
             test_binary: Some("extension_loads".into()),
         },
+        // The expression editor's REAPER-only coverage: panel docking,
+        // finding REAPER's selection, and writes reaching a real take.
+        // Its logic is tested against the standalone backend instead.
+        TestPackage {
+            package: "fts-extensions".into(),
+            features: vec![],
+            test_threads: 1,
+            default_skips: vec![],
+            test_binary: Some("expression_editor".into()),
+        },
+        // Take envelopes in REAPER: creation by action, the
+        // enumeration fallback, and the selection surviving both.
+        // Nothing here has a standalone equivalent — the behaviour under
+        // test is REAPER's own.
+        TestPackage {
+            package: "fts-extensions".into(),
+            features: vec![],
+            test_threads: 1,
+            default_skips: vec![],
+            test_binary: Some("take_envelope".into()),
+        },
         // The midi-tools panels driven through DockHost — the only tests
         // that exercise the real Blitz renderer and the real event path.
         // Separate binary, so it needs its own entry: `test_binary` is a
@@ -82,19 +103,18 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             package: "fts-extensions".into(),
             features: vec![],
             test_threads: 1,
-            // Skipped by default because this rig shares its REAPER
-            // profile (~/fts-dev) with the interactive dev instance: if
-            // one is open, the spawned REAPER contends with it and these
-            // fail on socket discovery rather than on anything they
-            // assert. The DockHost bug that used to block them is fixed
-            // (the layer is mounted now) — run them against a clean rig:
+            // All three run. `panel_click_shapes_the_take` was the last
+            // holdout, and neither suspect was right: the dock-host RPC
+            // works (that was a missing layer mount, since fixed) and
+            // the event path was never broken — Blitz raises `click`
+            // from a primary PointerUp, and the injected pointer landed
+            // squarely on the `curve-rise` button.
             //
-            //     just reaper integration-test panel_
-            default_skips: vec![
-                "panel_toggles_via_its_action".into(),
-                "panel_actually_renders_in_reaper".into(),
-                "panel_click_shapes_the_take".into(),
-            ],
+            // It was leaked selection. `select` is additive and these
+            // tests share a project, so the panel bound to the *earlier*
+            // test's item and shaped a take nobody asserted on. The
+            // helper now deselects first.
+            default_skips: vec![],
             test_binary: Some("midi_tools_panel".into()),
         },
     ];

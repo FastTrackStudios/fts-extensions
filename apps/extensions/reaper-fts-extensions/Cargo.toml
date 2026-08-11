@@ -18,6 +18,7 @@ default = [
     "host-hooks",
     "mod-session",
     "mod-input",
+    "mod-expression-editor",
     "mod-launcher",
     "poll-broadcast",
     "ui-dock",
@@ -31,6 +32,7 @@ mod-launcher = ["dep:fts-launcher", "ui-dock"]
 mod-session = ["dep:session", "dep:dynamic-template"]
 mod-sync = ["dep:daw-synchronization"]
 mod-input = ["dep:reaper-input"]
+mod-expression-editor = ["dep:expression-editor-reaper"]
 # Live MIDI mirror: source-of-truth tracks with hidden, library-timing-
 # adjusted twins regenerated on edit (keyflow-orchestra mirror pass).
 # Off by default — kept as the fallback path for third-party samplers
@@ -71,6 +73,7 @@ dynamic-template = { workspace = true, optional = true }
 # surfaces during plugin_main, where the REAPER host window isn't ready
 # yet and surface creation OOMs.
 reaper-input = { workspace = true, optional = true }
+expression-editor-reaper = { workspace = true, optional = true }
 daw-synchronization = { workspace = true, optional = true }
 # Orchestral mirror pass (pure Rust, no Reaper deps) — in-tree crate.
 keyflow-orchestra = { workspace = true, optional = true }
@@ -91,11 +94,12 @@ reaper-config = { workspace = true }
 # FTS design system (shadcn-ui clone for Dioxus)
 fts-ui = { workspace = true }
 
-# The midi-tools panels + their REAPER-backed sinks. `midi-tools-ui` is
-# Blitz-safe (inline styles, propless roots); `midi-tools-daw` is the half
+# The velocity/arp panels + their REAPER-backed sinks, absorbed into the
+# expression editor by #153. `expression-editor-ui` is
+# Blitz-safe (inline styles, propless roots); the sink is the half
 # that knows about takes.
-midi-tools-ui = { workspace = true }
-midi-tools-daw = { workspace = true }
+expression-editor-ui = { workspace = true }
+expression-editor-daw = { workspace = true }
 
 # REAPER entry point machinery
 reaper-low.workspace = true
@@ -116,6 +120,11 @@ tracing-appender.workspace = true
 
 [dev-dependencies]
 daw = { workspace = true, features = ["reaper", "test-harness"] }
+# The expression editor's REAPER coverage lives here rather than in its
+# own crate, because the panel only exists once this extension has
+# registered it.
+expression-editor-core = { workspace = true }
+expression-editor-reaper = { workspace = true }
 eyre.workspace = true
 tokio = { workspace = true, features = ["macros"] }
 # Integration tests assert against the canonical ruler-lane layout
