@@ -651,6 +651,27 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     #[cfg(all(feature = "mod-input", feature = "mod-expression-editor"))]
     expression_mouse::install();
 
+    // The expression editor panel is its own input context: reaper-input
+    // asks the dock whose window a keystroke targets, and routes editor
+    // keys through the `expression-editor` bindings (unbound → the panel
+    // itself, never REAPER's accelerators). The panel takes focus on any
+    // click so that routing actually engages.
+    #[cfg(all(
+        feature = "mod-input",
+        feature = "mod-expression-editor",
+        feature = "ui-dock"
+    ))]
+    {
+        reaper_input::input::window_detection::set_panel_context_probe(|hwnd| {
+            daw::reaper_ui::dock::is_panel_hwnd(
+                expression_editor_reaper::PANEL_ID,
+                hwnd as *mut std::ffi::c_void,
+            )
+            .then_some(reaper_input::input::window_detection::EXPRESSION_EDITOR_TAG)
+        });
+        info!("Expression editor input-context probe registered");
+    }
+
     // Collect actions from all modules after init has populated runtime state.
     let module_actions = module::collect_actions(&modules);
 
@@ -730,6 +751,16 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     }
 
     register_actions_sync(&all_defs, modules, panels);
+
+    // After the (scheduled) panel registration: the expression editor
+    // takes keyboard focus on any click, so its input context engages.
+    // Queued behind the registration task on the same FIFO.
+    #[cfg(all(feature = "ui-dock", feature = "mod-expression-editor"))]
+    if let Err(e) = Global::get().task_support.do_later_in_main_thread_asap(|| {
+        daw::reaper_ui::dock::set_panel_focus_on_click(expression_editor_reaper::PANEL_ID, true);
+    }) {
+        warn!("Failed to schedule expression-editor focus flag: {e}");
+    }
 
     // After the main registration: also expose the midi-tools panels in
     // REAPER's MIDI editor section, so their toolbar buttons there
