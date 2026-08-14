@@ -91,7 +91,7 @@ fn crosswalk(ini: &str) -> Vec<Bound> {
         if n >= 8 {
             continue;
         }
-        let Some(id) = v.trim().split_whitespace().next().and_then(|s| s.parse::<u32>().ok())
+        let Some(id) = v.split_whitespace().next().and_then(|s| s.parse::<u32>().ok())
         else {
             continue;
         };
