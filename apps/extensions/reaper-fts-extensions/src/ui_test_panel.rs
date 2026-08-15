@@ -1,12 +1,12 @@
 //! Reaper-Dioxus UI Component Test Panel
 //!
-//! Renders the fts-ui Showcase in the native Dioxus/Blitz renderer.
+//! Renders the architect-ui Showcase in the native Dioxus/Blitz renderer.
 
 use daw::module::{ActionDef, DockPosition, PanelComponent, PanelDef, PanelRenderer};
 use daw::reaper_ui::prelude::*;
 
 const TAILWIND_CSS: &str = include_str!("../assets/tailwind.css");
-const FTS_THEME_CSS: &str = include_str!("../../../../libs/fts-ui/fts-ui/assets/fts-theme.css");
+const FTS_THEME_CSS: &str = architect_ui::THEME_CSS;
 
 const BLITZ_FIXES: &str = r#"
 input, textarea, select, button { cursor: auto !important; }
@@ -21,7 +21,7 @@ pub fn UiTestPanel() -> Element {
         document::Style { {FTS_THEME_CSS} }
         document::Style { {BLITZ_FIXES} }
 
-        fts_ui::showcase::Showcase {}
+        architect_ui::showcase::Showcase {}
     }
 }
 

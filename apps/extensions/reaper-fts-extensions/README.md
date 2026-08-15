@@ -47,7 +47,7 @@ commits. The current pins are:
 | `keyflow` | `c57b122ec309a8aade59b07b84041bc98a195a85` |
 | `daw` | `273dbaa1ef5e4dfac9cd35988e13d2b4b954ab6e` |
 | `reaper-lib` | `8fe87a0604a87f24009dd03056627d0f19f89bc5` |
-| `fts-ui` | `d9f01261cb59708300cc5b31fa7fe6bd766a66aa` |
+| `architect-ui` | `d9f01261cb59708300cc5b31fa7fe6bd766a66aa` |
 | `blitz` | `18cbfa7d63496441c37074c07470f71f3004d290` |
 | `vox` | `2a2f793b868b22d82ae4be6e1abc581ca330f940` |
 | `monarchy` | `b5efa6bce31cfd009f9f042403a034f89dabd2ab` |
