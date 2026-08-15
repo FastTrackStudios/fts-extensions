@@ -19,7 +19,7 @@ default = [
     "mod-session",
     "mod-input",
     "mod-expression-editor",
-    "mod-launcher",
+    # "mod-launcher",  # off by default since the Aug 2026 split — see below
     "poll-broadcast",
     "ui-dock",
 ]
@@ -28,7 +28,15 @@ default = [
 # `mod-launcher` requires `ui-dock` because its actions toggle a Dioxus
 # panel via `daw::ui::dock::toggle_panel`, which is a no-op unless the
 # host has called `init_dock`/`init_service` at startup.
-mod-launcher = ["dep:fts-launcher", "ui-dock"]
+# The `dep:fts-launcher` half is removed until dioxus-launcher is vendored:
+# fts-launcher is excluded from the workspace (its launcher-ui dep resolves a
+# stale Codeberg fts-ui that carries its own dioxus), and an excluded crate
+# cannot inherit `workspace = true` deps — so merely declaring the optional
+# dep breaks manifest resolution for the whole tree. The feature name is kept
+# so the `#[cfg(feature = "mod-launcher")]` in lib.rs stays a known cfg;
+# enabling it now fails loudly on the missing `fts_launcher` crate, which is
+# the correct signal.
+mod-launcher = ["ui-dock"]
 mod-session = ["dep:session", "dep:dynamic-template"]
 mod-sync = ["dep:daw-synchronization"]
 mod-input = ["dep:reaper-input"]
@@ -59,7 +67,7 @@ architect.workspace = true
 fts-extensions-actions = { workspace = true }
 
 # FTS Launcher — search/workflow engine
-fts-launcher = { workspace = true, optional = true }
+# fts-launcher = { workspace = true, optional = true }  # see mod-launcher note
 
 # Modules — each implements daw::DawModule
 session = { workspace = true, optional = true }
@@ -92,7 +100,7 @@ daw-extension-runtime = { workspace = true }
 reaper-config = { workspace = true }
 
 # FTS design system (shadcn-ui clone for Dioxus)
-fts-ui = { workspace = true }
+architect-ui = { workspace = true }
 
 # The velocity/arp panels + their REAPER-backed sinks, absorbed into the
 # expression editor by #153. `expression-editor-ui` is
