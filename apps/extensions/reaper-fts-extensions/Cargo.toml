@@ -2,6 +2,7 @@
 name = "fts-extensions"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
 description = "FTS Extensions — standalone REAPER extension providing utility actions (cdylib)"
 
 [lib]

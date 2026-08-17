@@ -2,6 +2,7 @@
 name = "fts-extensions-xtask"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
 description = "REAPER integration-test runner for fts-extensions (daw::test harness); invoked via `just reaper-integration-test`"
 
 [[bin]]

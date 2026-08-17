@@ -2,6 +2,7 @@
 name = "fts-extensions-actions"
 version.workspace = true
 edition.workspace = true
+license.workspace = true
 description = "fts-extensions' #[architect::actions] trait declarations — pure metadata, no REAPER deps, so it can be linked into fts-cli's action menu."
 
 [lib]
