@@ -3,12 +3,17 @@
 //! Every action module pins its own generated ids, but a per-module test
 //! is blind to the two failure modes that actually bite:
 //!
-//! - the same command id registered by two different systems (the legacy
-//!   `actions_proto::define_actions!` blocks and an
-//!   `#[architect::actions]` trait emitting the same string), and
+//! - the same command id registered by two different systems — which is
+//!   what the retired `actions_proto::define_actions!` blocks did, each
+//!   emitting the same string an `#[architect::actions]` trait did — and
 //! - the same *operation* registered under two different ids, which puts
 //!   two entries in REAPER's action list for one thing and means a
 //!   keybinding on the wrong one silently does nothing.
+//!
+//! The two tests that policed the legacy `session_actions` block are gone
+//! with the block: its 21 ids now live in
+//! `session_proto::{navigation_actions, track_template_actions}`, each
+//! pinned by that module's own id test.
 //!
 //! This runs the real registration path — `register_all_architect_actions`,
 //! the same function `plugin_main` calls — against a collecting backend,
@@ -70,113 +75,6 @@ fn architect_action_ids_are_unique() {
         dupes
             .iter()
             .map(|(id, owners)| format!("  {id}  <-  {}", owners.join(", ")))
-            .collect::<Vec<_>>()
-            .join("\n")
-    );
-}
-
-/// The legacy `session_actions` block must not declare anything the
-/// architect traits already emit. Both paths register with REAPER, so an
-/// overlap means one operation with two registrations — and historically
-/// one of them wired to nothing.
-#[test]
-fn legacy_session_defs_do_not_collide_with_architect_ids() {
-    let architect_ids: std::collections::BTreeSet<&str> =
-        CollectingBackend::collect().iter().map(|m| m.id).collect();
-
-    let overlap: Vec<String> = session::session_actions::definitions()
-        .iter()
-        .map(|def| def.id.to_command_id())
-        .filter(|id| architect_ids.contains(id.as_str()))
-        .collect();
-
-    assert!(
-        overlap.is_empty(),
-        "legacy session_actions entries duplicate architect ids \
-         (delete the define_actions! entry — the macro already emits it):\n{}",
-        overlap
-            .iter()
-            .map(|id| format!("  {id}"))
-            .collect::<Vec<_>>()
-            .join("\n")
-    );
-}
-
-/// Everything still declared the legacy way, with the reason it's still
-/// there. The point is that adding an entry to `session_actions` is a
-/// decision someone has to make on purpose: the default path for a new
-/// REAPER action is an `#[architect::actions]` trait, and anything left
-/// in the `define_actions!` block is either awaiting migration or
-/// deliberately not a REAPER command at all.
-///
-/// If this fails because you added an entry: migrate it instead, or add
-/// it here with a note saying why it can't be.
-#[test]
-fn legacy_session_defs_are_an_explicit_allowlist() {
-    // RPC-only. These route through `SetlistServiceImpl::go_to_song_impl`
-    // / `go_to_section_impl`, which depend on `ensure_song_hydrated` — an
-    // async, timeout-bounded rebuild path that can't be collapsed into a
-    // synchronous REAPER action callback without either risking a
-    // main-thread deadlock or silently no-opping on a cache miss. They
-    // have never been dispatchable as REAPER commands; see
-    // `session_proto::playback`'s module doc.
-    const RPC_ONLY: &[&str] = &[
-        "FTS_SESSION_SMART_NEXT",
-        "FTS_SESSION_SMART_PREVIOUS",
-        "FTS_SESSION_NEXT_SONG",
-        "FTS_SESSION_PREVIOUS_SONG",
-        "FTS_SESSION_NEXT_SECTION",
-        "FTS_SESSION_PREVIOUS_SECTION",
-    ];
-
-    // Compatibility aliases for `dynamic_template` actions that this crate
-    // does not implement. They survive only because committed FTS config
-    // still binds these names — `reaper-input`'s tracks.styx /
-    // mode-organize.styx and `fts-icons`' tracks.toml. Retiring them means
-    // repointing that config at the FTS_DYNAMIC_TEMPLATE_* ids AND
-    // re-running `fts-icons build --install`, so it's a sequenced change,
-    // not a refactor. See `dynamic_template::daw_module::dispatch_session_command`.
-    //
-    // Every alias with no committed binding is already gone.
-    const DYNAMIC_TEMPLATE_ALIASES: &[&str] = &[
-        "FTS_SESSION_ORGANIZE_EVERYTHING",
-        "FTS_SESSION_ORGANIZE_SELECTED_TRACKS",
-        "FTS_SESSION_CREATE_NEW_DRUM_KIT",
-        "FTS_SESSION_CREATE_NEW_ELECTRONIC_DRUMS",
-        "FTS_SESSION_CREATE_NEW_BASS_GUITAR",
-        "FTS_SESSION_CREATE_NEW_ELECTRIC_GUITAR",
-        "FTS_SESSION_CREATE_NEW_ACOUSTIC_GUITAR",
-        "FTS_SESSION_CREATE_NEW_KEYS",
-        "FTS_SESSION_CREATE_NEW_SYNTH",
-        "FTS_SESSION_CREATE_NEW_LEAD_VOCALS",
-        "FTS_SESSION_CREATE_NEW_BACKGROUND_VOCALS",
-        "FTS_SESSION_CREATE_NEW_ORCHESTRAL_BRASS",
-        "FTS_SESSION_CREATE_NEW_ORCHESTRAL_WOODWINDS",
-        "FTS_SESSION_CREATE_NEW_ORCHESTRAL_STRINGS",
-        "FTS_SESSION_CREATE_NEW_ORCHESTRAL_PERCUSSION",
-        "FTS_SESSION_CREATE_NEW_SFX",
-    ];
-
-    let actual: Vec<String> = session::session_actions::definitions()
-        .iter()
-        .map(|def| def.id.to_command_id())
-        .collect();
-
-    let unexpected: Vec<&String> = actual
-        .iter()
-        .filter(|id| {
-            !RPC_ONLY.contains(&id.as_str())
-                && !DYNAMIC_TEMPLATE_ALIASES.contains(&id.as_str())
-        })
-        .collect();
-
-    assert!(
-        unexpected.is_empty(),
-        "unexpected legacy session_actions entries — migrate to \
-         #[architect::actions] or document here why not:\n{}",
-        unexpected
-            .iter()
-            .map(|id| format!("  {id}"))
             .collect::<Vec<_>>()
             .join("\n")
     );
