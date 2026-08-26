@@ -126,9 +126,7 @@ async fn take_volume_points(item: &ItemHandle) -> eyre::Result<Vec<(f64, f64)>> 
 }
 
 #[reaper_test(isolated)]
-async fn takeenv_reading_does_not_create_one(
-    ctx: &ReaperTestContext,
-) -> eyre::Result<()> {
+async fn takeenv_reading_does_not_create_one(ctx: &ReaperTestContext) -> eyre::Result<()> {
     // The premise the rest of the file rests on, and a trap this test
     // caught: resolving a take envelope is what *makes* it, so the
     // backend has to decline for reads. Before that split, merely

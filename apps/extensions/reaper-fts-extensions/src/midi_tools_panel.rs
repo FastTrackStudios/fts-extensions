@@ -108,7 +108,11 @@ pub fn register_in_midi_editor_section() {
     };
 
     for (id, label, panel) in [
-        ("FTS_MIDI_VELOCITY", "FTS: MIDI Velocity", "FTS_MIDI_VELOCITY"),
+        (
+            "FTS_MIDI_VELOCITY",
+            "FTS: MIDI Velocity",
+            "FTS_MIDI_VELOCITY",
+        ),
         ("FTS_MIDI_ARP", "FTS: MIDI Arpeggiator", "FTS_MIDI_ARP"),
     ] {
         register_action_in_section_main_thread(

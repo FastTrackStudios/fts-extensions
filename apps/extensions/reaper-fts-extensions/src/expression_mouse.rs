@@ -45,7 +45,12 @@ struct Bound {
 
 fn overlay(mut map: MouseMap) -> MouseMap {
     for b in parsed() {
-        map.set(b.context, b.gesture, ModKey::from_bits(b.mods.bits()), b.action);
+        map.set(
+            b.context,
+            b.gesture,
+            ModKey::from_bits(b.mods.bits()),
+            b.action,
+        );
     }
     map
 }
@@ -91,7 +96,10 @@ fn crosswalk(ini: &str) -> Vec<Bound> {
         if n >= 8 {
             continue;
         }
-        let Some(id) = v.split_whitespace().next().and_then(|s| s.parse::<u32>().ok())
+        let Some(id) = v
+            .split_whitespace()
+            .next()
+            .and_then(|s| s.parse::<u32>().ok())
         else {
             continue;
         };
@@ -192,8 +200,9 @@ fn piano_roll_click(b: MidiPianoRollClickBehavior) -> Option<Action> {
     Some(match b {
         B::NoAction => Action::None,
         B::DeselectAllNotes => Action::DeselectAll,
-        B::DeselectAllNotesAndMoveEditCursor
-        | B::DeselectAllNotesAndMoveEditCursorIgnoringSnap => Action::DeselectAll,
+        B::DeselectAllNotesAndMoveEditCursor | B::DeselectAllNotesAndMoveEditCursorIgnoringSnap => {
+            Action::DeselectAll
+        }
         B::InsertNote | B::InsertNoteLeavingOtherNotesSelected => Action::InsertNote,
         B::InsertNoteIgnoringSnap => Action::InsertNoteNoSnap,
         _ => return None,
@@ -282,8 +291,7 @@ fn note_edge(b: MidiNoteEdgeBehavior) -> Option<Action> {
     use MidiNoteEdgeBehavior as B;
     Some(match b {
         B::NoAction => Action::None,
-        B::MoveNoteEdge
-        | B::MoveNoteEdgeIgnoringSelection => Action::MoveNoteEdge,
+        B::MoveNoteEdge | B::MoveNoteEdgeIgnoringSelection => Action::MoveNoteEdge,
         B::MoveNoteEdgeIgnoringSnap | B::MoveNoteEdgeIgnoringSnapAndSelection => {
             Action::MoveNoteEdgeNoSnap
         }

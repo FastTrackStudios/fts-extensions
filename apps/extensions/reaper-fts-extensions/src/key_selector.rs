@@ -97,12 +97,10 @@ pub fn show_key_menu() {
 }
 
 fn set_key(root: &str, major: bool) -> eyre::Result<()> {
-    let key = key::key_from_name(root, major)
-        .ok_or_else(|| eyre::eyre!("{root} is not a note"))?;
+    let key = key::key_from_name(root, major).ok_or_else(|| eyre::eyre!("{root} is not a note"))?;
     let project = ProjectContext::Current;
     let at = Transport::get_position(&daw_reaper::Reaper, project.clone());
-    key::set_key_at(&daw_reaper::Reaper, project, at, &key)
-        .map_err(|e| eyre::eyre!("{e:?}"))?;
+    key::set_key_at(&daw_reaper::Reaper, project, at, &key).map_err(|e| eyre::eyre!("{e:?}"))?;
     Ok(())
 }
 

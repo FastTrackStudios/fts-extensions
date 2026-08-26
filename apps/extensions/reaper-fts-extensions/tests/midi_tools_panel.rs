@@ -40,9 +40,9 @@
 //! just reaper integration-test panel_
 //! ```
 
-use daw::test::{ReaperTestContext, reaper_test};
 use daw::service::dock_host::{DockHandle, DockKind, UiEventDto};
 use daw::service::{Duration, MidiNoteCreate, PositionInSeconds};
+use daw::test::{ReaperTestContext, reaper_test};
 use std::time::Duration as StdDuration;
 
 const PPQ: f64 = 960.0;
@@ -74,11 +74,7 @@ async fn panel(ctx: &ReaperTestContext) -> eyre::Result<DockHandle> {
 /// Polled rather than asserted immediately: opening a panel builds a
 /// window and an embedded Blitz view, which is not synchronous with the
 /// action returning.
-async fn wait_visible(
-    ctx: &ReaperTestContext,
-    handle: DockHandle,
-    want: bool,
-) -> eyre::Result<()> {
+async fn wait_visible(ctx: &ReaperTestContext, handle: DockHandle, want: bool) -> eyre::Result<()> {
     let dock = ctx.daw.dock_host();
     for _ in 0..40 {
         if dock.is_visible(handle).await? == want {
@@ -154,7 +150,8 @@ async fn click(ctx: &ReaperTestContext, handle: DockHandle, x: f32, y: f32) -> e
     let dock = ctx.daw.dock_host();
     // Move first: a real pointer is somewhere before it presses, and
     // hover state can matter to hit-testing.
-    dock.inject_event(handle, UiEventDto::PointerMove { x, y }).await?;
+    dock.inject_event(handle, UiEventDto::PointerMove { x, y })
+        .await?;
     dock.inject_event(handle, UiEventDto::PointerDown { x, y, button: 0 })
         .await?;
     tokio::time::sleep(StdDuration::from_millis(60)).await;
@@ -238,7 +235,10 @@ async fn panel_actually_renders_in_reaper(ctx: &ReaperTestContext) -> eyre::Resu
         .collect::<std::collections::HashSet<_>>()
         .len();
     ctx.log(&format!("{distinct} distinct sampled colours"));
-    eyre::ensure!(distinct > 3, "panel surface looks blank ({distinct} colours)");
+    eyre::ensure!(
+        distinct > 3,
+        "panel surface looks blank ({distinct} colours)"
+    );
     Ok(())
 }
 

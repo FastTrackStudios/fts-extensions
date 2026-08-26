@@ -41,7 +41,11 @@ const SEEDED: [u8; 3] = [60, 64, 67];
 
 /// A track with one MIDI item holding a known set of notes.
 async fn seed_item(ctx: &ReaperTestContext) -> eyre::Result<ItemHandle> {
-    let track = ctx.project().tracks().add("Expression Editor", None).await?;
+    let track = ctx
+        .project()
+        .tracks()
+        .add("Expression Editor", None)
+        .await?;
     let notes = SEEDED
         .iter()
         .enumerate()
@@ -174,9 +178,7 @@ async fn a_load_edit_and_write_round_trip_reaches_the_take(
 }
 
 #[reaper_test(isolated)]
-async fn a_write_with_no_edit_preserves_the_take(
-    ctx: &ReaperTestContext,
-) -> eyre::Result<()> {
+async fn a_write_with_no_edit_preserves_the_take(ctx: &ReaperTestContext) -> eyre::Result<()> {
     let item = seed_item(ctx).await?;
     item.select().await?;
     settle().await;
@@ -191,9 +193,7 @@ async fn a_write_with_no_edit_preserves_the_take(
 }
 
 #[reaper_test(isolated)]
-async fn repeated_writes_replace_rather_than_append(
-    ctx: &ReaperTestContext,
-) -> eyre::Result<()> {
+async fn repeated_writes_replace_rather_than_append(ctx: &ReaperTestContext) -> eyre::Result<()> {
     let item = seed_item(ctx).await?;
     item.select().await?;
     settle().await;

@@ -176,8 +176,7 @@ fn committed_bindings_resolve_to_registered_actions() {
         .into_iter()
         .map(|(id, ..)| id)
         .collect();
-    let mut registered: std::collections::BTreeSet<&str> =
-        architect.iter().map(|m| m.id).collect();
+    let mut registered: std::collections::BTreeSet<&str> = architect.iter().map(|m| m.id).collect();
     registered.extend(legacy.iter().map(|s| s.as_str()));
 
     let re = regex_lite_fts_ids();

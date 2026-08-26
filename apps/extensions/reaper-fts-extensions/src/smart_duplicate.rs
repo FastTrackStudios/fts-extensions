@@ -16,7 +16,7 @@
 //! FFI. Same pattern as `volume_balancer`'s `ExtState` use.
 
 use daw::service::{
-    Items, ItemRef, MeasureMode, PositionConversion, PositionInBeats, PositionInSeconds,
+    ItemRef, Items, MeasureMode, PositionConversion, PositionInBeats, PositionInSeconds,
     ProjectContext, Projects,
 };
 use tracing::info;
@@ -79,7 +79,10 @@ pub fn smart_duplicate() {
         // Native clone (preserves takes / fades / group / color); it leaves
         // the fresh copy as the project's sole selection, so we read it back
         // to get its real GUID.
-        if daw.duplicate_item(ctx(), ItemRef::Guid(c.guid.clone())).is_none() {
+        if daw
+            .duplicate_item(ctx(), ItemRef::Guid(c.guid.clone()))
+            .is_none()
+        {
             continue;
         }
         let Some(copy) = daw.get_selected_items(ctx()).into_iter().next() else {

@@ -144,7 +144,11 @@ pub mod actions;
 mod architect_actions;
 mod continuous_action;
 mod error;
+#[cfg(all(feature = "mod-input", feature = "mod-expression-editor"))]
+mod expression_mouse;
 mod item_actions;
+#[cfg(feature = "mod-session")]
+mod key_selector;
 mod menu;
 mod midi_flam;
 mod midi_mode;
@@ -152,14 +156,10 @@ mod midi_mode;
 mod midi_mode_input;
 #[cfg(feature = "ui-dock")]
 mod midi_tools_panel;
-#[cfg(all(feature = "mod-input", feature = "mod-expression-editor"))]
-mod expression_mouse;
 #[cfg(feature = "mod-mirror")]
 mod mirror;
 #[cfg(all(feature = "mod-session", feature = "mod-input"))]
 mod mode_input;
-#[cfg(feature = "mod-session")]
-mod key_selector;
 #[cfg(feature = "mod-session")]
 mod mode_selector;
 #[cfg(feature = "mod-session")]

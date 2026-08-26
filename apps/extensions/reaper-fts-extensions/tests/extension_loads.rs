@@ -430,7 +430,11 @@ async fn session_keyflow_marker_action_inserts_marker(ctx: &ReaperTestContext) -
     execute_registered_action(ctx, "FTS_SESSION_INSERT_START_MARKER").await?;
 
     let marker = wait_for_marker_named(ctx, "=START").await?;
-    assert_eq!(marker.lane, Some(MARKS_LANE), "=START should be on MARKS lane");
+    assert_eq!(
+        marker.lane,
+        Some(MARKS_LANE),
+        "=START should be on MARKS lane"
+    );
     assert_eq!(marker.position_seconds(), 2.0);
     assert!(marker.color.is_some(), "=START should get a default color");
     Ok(())
@@ -446,7 +450,11 @@ async fn session_keyflow_region_action_inserts_region(ctx: &ReaperTestContext) -
     execute_registered_action(ctx, "FTS_SESSION_INSERT_CHORUS_REGION").await?;
 
     let region = wait_for_region_named(ctx, "CH").await?;
-    assert_eq!(region.lane, Some(SECTIONS_LANE), "CH should be on SECTIONS lane");
+    assert_eq!(
+        region.lane,
+        Some(SECTIONS_LANE),
+        "CH should be on SECTIONS lane"
+    );
     assert_eq!(region.start_seconds(), 4.0);
     assert_eq!(region.end_seconds(), 12.0);
     assert!(region.color.is_some(), "CH should get a default color");
@@ -472,7 +480,11 @@ async fn session_keyflow_region_action_uses_default_length_and_advances_cursor(
     execute_registered_action(ctx, "FTS_SESSION_INSERT_CHORUS_REGION").await?;
 
     let region = wait_for_region_named(ctx, "CH").await?;
-    assert_eq!(region.lane, Some(SECTIONS_LANE), "CH should be on SECTIONS lane");
+    assert_eq!(
+        region.lane,
+        Some(SECTIONS_LANE),
+        "CH should be on SECTIONS lane"
+    );
     assert_eq!(region.start_seconds(), 0.0);
     assert!(
         region.end_seconds().is_finite(),
@@ -512,7 +524,11 @@ async fn session_keyflow_region_action_ignores_oversized_time_selection(
     execute_registered_action(ctx, "FTS_SESSION_INSERT_OUTRO_REGION").await?;
 
     let region = wait_for_region_named(ctx, "OUT").await?;
-    assert_eq!(region.lane, Some(SECTIONS_LANE), "OUT should be on SECTIONS lane");
+    assert_eq!(
+        region.lane,
+        Some(SECTIONS_LANE),
+        "OUT should be on SECTIONS lane"
+    );
     assert_eq!(region.start_seconds(), 0.0);
     assert!(
         (region.end_seconds() - expected_end).abs() <= 0.001,
@@ -540,7 +556,11 @@ async fn session_keyflow_count_in_region_defaults_to_two_measures_and_pink(
     execute_registered_action(ctx, "FTS_SESSION_INSERT_COUNT_IN_REGION").await?;
 
     let region = wait_for_region_named(ctx, "COUNT").await?;
-    assert_eq!(region.lane, Some(SECTIONS_LANE), "COUNT should be on SECTIONS lane");
+    assert_eq!(
+        region.lane,
+        Some(SECTIONS_LANE),
+        "COUNT should be on SECTIONS lane"
+    );
     assert_eq!(region.start_seconds(), 0.0);
     assert!(
         (region.end_seconds() - expected_end).abs() <= 0.001,
@@ -561,7 +581,11 @@ async fn session_keyflow_section_actions_retroactively_update_chorus_names(
     project.transport().set_time_selection(0.0, 8.0).await?;
     execute_registered_action(ctx, "FTS_SESSION_INSERT_CHORUS_REGION").await?;
     let regions = wait_for_region_names(&project, &["CH"]).await?;
-    assert_eq!(regions[0].lane, Some(SECTIONS_LANE), "CH should be on SECTIONS lane");
+    assert_eq!(
+        regions[0].lane,
+        Some(SECTIONS_LANE),
+        "CH should be on SECTIONS lane"
+    );
 
     project.transport().set_position(8.0).await?;
     project.transport().set_time_selection(8.0, 16.0).await?;
@@ -577,7 +601,11 @@ async fn session_keyflow_section_actions_retroactively_update_chorus_names(
     assert_eq!(regions[0].start_seconds(), 0.0);
     assert_eq!(regions[1].start_seconds(), 8.0);
     assert_eq!(regions[2].start_seconds(), 32.0);
-    assert!(regions.iter().all(|region| region.lane == Some(SECTIONS_LANE)));
+    assert!(
+        regions
+            .iter()
+            .all(|region| region.lane == Some(SECTIONS_LANE))
+    );
     assert!(regions.iter().all(|region| region.color.is_some()));
 
     project.transport().clear_time_selection().await?;
