@@ -1,14 +1,8 @@
-# shell — the one PR/push gate.
+# fts-extensions — the one PR/push gate.
 #
-# Toolchain comes from the repo flake: every step runs under
-# `nix develop .#ci -c`. `--accept-flake-config` picks up the
-# fasttrackstudio.cachix.org substituter from flake.nix nixConfig — keep it
-# seeded via cache-devshell.yml or the first job of the day pays the full
-# toolchain build.
-#
-# Deliberately simpler than the monorepo gate it replaces: that one drove
-# `cargo rail plan` to pick affected crates out of a 238-member workspace.
-# These workspaces are small enough to just build.
+# Compile + test only. The REAPER integration suite lives in
+# reaper.yml, which is dispatch/tag triggered and must run self-hosted
+# (REAPER's licence forbids redistribution).
 
 name: checks
 
@@ -29,7 +23,7 @@ jobs:
   check:
     name: Build + test
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - name: Free disk space
