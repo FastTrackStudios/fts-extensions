@@ -4,7 +4,7 @@
 # REAPER is licensed (THEBATTLESHIP).
 #
 # PREREQUISITE: a self-hosted GitHub Actions runner registered on
-# THEBATTLESHIP with labels [self-hosted, nix-host] (NixOS:
+# THEBATTLESHIP with labels [self-hosted, fts-extensions] (NixOS:
 # services.github-runners in ~/.flake hosts/THEBATTLESHIP). Until it
 # exists, dispatched runs queue and time out — do not tag releases
 # expecting this to pass before the runner lands.
@@ -43,7 +43,7 @@ env:
 
 jobs:
   reaper-integration:
-    runs-on: [self-hosted, nix-host]
+    runs-on: [self-hosted, fts-extensions]
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
