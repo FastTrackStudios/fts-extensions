@@ -36,11 +36,6 @@ concurrency:
   group: reaper-${{ github.ref }}
   cancel-in-progress: false
 
-env:
-  FTS_CI: /var/lib/github-runner/fts-ci
-  CARGO_TARGET_DIR: /var/lib/github-runner/fts-ci/target-reaper
-  CARGO_HOME: /var/lib/github-runner/fts-ci/cargo-home
-
 jobs:
   reaper-integration:
     runs-on: [self-hosted, fts-extensions]
@@ -48,8 +43,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Everything persistent (REAPER gcroot, rig, target dir, cargo home)
+      # lives under $CI_CACHE_DIR, the runner's durable cache directory —
+      # not a fixed /var/lib path, which is read-only to this runner.
       - name: Prepare persistent caches
         run: |
+          FTS_CI="${CI_CACHE_DIR:-$HOME/cargo-target}/reaper"
+          {
+            echo "FTS_CI=$FTS_CI"
+            echo "CARGO_TARGET_DIR=$FTS_CI/target-reaper"
+            echo "CARGO_HOME=$FTS_CI/cargo-home"
+          } >> "$GITHUB_ENV"
+          export CARGO_TARGET_DIR="$FTS_CI/target-reaper" CARGO_HOME="$FTS_CI/cargo-home"
           mkdir -p "$CARGO_TARGET_DIR" "$CARGO_HOME"
           nix develop .#reaper-test --profile "$FTS_CI/devshell-reaper" -c true
 
