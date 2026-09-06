@@ -240,8 +240,11 @@ fn crate_dir(
         .ok_or("cargo metadata: no packages array")?
         .iter()
         .find(|p| p["name"] == package)
-        .ok_or_else(|| format!("cargo metadata: package `{package}` not found in the resolved dependency graph"))?
-        ["manifest_path"]
+        .ok_or_else(|| {
+            format!(
+                "cargo metadata: package `{package}` not found in the resolved dependency graph"
+            )
+        })?["manifest_path"]
         .as_str()
         .ok_or("cargo metadata: manifest_path missing")?
         .to_string();
