@@ -27,27 +27,27 @@ license = "GPL-3.0-or-later"
 repository = "https://github.com/FastTrackStudios/fts-extensions"
 
 [workspace.dependencies]
-daw = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
-daw-actions = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
-daw-synchronization = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
-daw-reaper = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10", default-features = false }
-daw-extension-runtime = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
-reaper-config = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
-reaper-input = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10", default-features = false }
-fts-launcher = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
+daw = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12" }
+daw-actions = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12" }
+daw-synchronization = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12" }
+daw-reaper = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12", default-features = false }
+daw-extension-runtime = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12" }
+reaper-config = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12" }
+reaper-input = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12", default-features = false }
+fts-launcher = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12" }
 fts-extensions-actions = { path = "apps/extensions/reaper-fts-extensions/actions" }
-session = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.5" }
+session = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.6" }
 # Lives in the keyflow repo, not session — this had pinned the session repo,
 # where it has never existed, and only resolved because a local [patch]
 # redirected it.
 keyflow-orchestra = { git = "https://github.com/FastTrackStudios/keyflow", tag = "v0.2.2" }
-expression-editor-core = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
-expression-editor-daw = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
-expression-editor-reaper = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
-expression-editor-ui = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
+expression-editor-core = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12" }
+expression-editor-daw = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12" }
+expression-editor-reaper = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12" }
+expression-editor-ui = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.12" }
 architect = { git = "https://github.com/FastTrackStudios/architect", tag = "v0.7.1" }
 architect-ui = { git = "https://github.com/FastTrackStudios/architect", tag = "v0.7.1" }
-dynamic-template = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.5" }
+dynamic-template = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.6" }
 reaper-low = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
 reaper-medium = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
 reaper-high = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
@@ -174,5 +174,5 @@ opt-level = 1
 # `.voyager-local-phon-jit-rc5` directory that does not exist, which made the
 # whole workspace unresolvable. Drop the vendor once phon-jit builds on
 # stable.
-phon-jit = { git = "https://github.com/FastTrackStudios/vendor", tag = "v0.1.0" }
+phon-jit = { git = "https://github.com/FastTrackStudios/vendor", tag = "v0.2.2" }
 phon = { git = "https://github.com/FastTrackStudios/vendor", tag = "v0.1.0" }
