@@ -37,7 +37,7 @@ pub fn show_key_menu() {
 
     let project = ProjectContext::Current;
     let at = Transport::get_position(&daw_reaper::Reaper, project.clone());
-    let current = key::key_at(&daw_reaper::Reaper, project, at).map(|k| key::format_key(&k));
+    let current = key::key_at(&daw_reaper::Reaper, &project, at).map(|k| key::format_key(&k));
 
     let mut id = 1u32;
     for (label, major) in MAJORS

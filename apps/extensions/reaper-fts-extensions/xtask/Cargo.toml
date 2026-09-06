@@ -14,6 +14,12 @@ path = "src/main.rs"
 # `test-harness` feature (former `reaper-test` crate with its `runner`
 # feature).
 daw = { workspace = true, features = ["test-harness"] }
+# Locating reaper-input's and fts-launcher's config directories: both
+# crates moved into the `daw` git dependency in the August 2026 split, so
+# their config lives in a `~/.cargo/git/checkouts/...` tree whose hash
+# changes with every `daw` bump. `cargo metadata` is the only thing that
+# reliably knows where cargo actually put them.
+serde_json = "1"
 
 [lints]
 workspace = true

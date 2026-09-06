@@ -1,16 +1,21 @@
-# FTS-Reaper: `nix run .#fts-reaper` — REAPER + SWS + ReaPack + every FTS
-# plugin (CLAP+VST3), pre-wired into a config dir. No manual setup, no
+# FTS-Reaper: `nix run .#fts-reaper` — REAPER + SWS + ReaPack + this repo's
+# own extension cdylib, pre-wired into a config dir. No manual setup, no
 # separate `fts-installer reaper` step.
 #
 # Built from the vendored reaper-flake recipes (nix/vendor/reaper-flake,
-# subtree-imported — see wrapper/reaper/pkgs/{reaper,sws,reapack}.nix) plus a
-# new `fts-plugins` crane package (this repo's own 17-plugin suite,
-# apps/plugins/*, bundled the same way `just plugins-bundle` does).
+# subtree-imported — see wrapper/reaper/pkgs/{reaper,sws,reapack}.nix) plus
+# the `fts-extensions` crane package (this repo's own REAPER extension,
+# apps/extensions/reaper-fts-extensions).
+#
+# The 17-plugin CLAP/VST3 suite that used to be injected alongside SWS/
+# ReaPack here moved out with the August 2026 split — it lives in the
+# `signal` repo now, which reaches REAPER as CLAP plugins rather than
+# through this extension. This repo only ever contributes the one
+# extension .so.
 #
 # Plugin injection follows the exact idiom reaper-flake already used for
-# SWS/ReaPack (idempotent launch-time symlinks into $REAPER_CONFIG/
-# UserPlugins — see wrapper/reaper/pkgs/dmg.nix's fts-reaper-launcher),
-# extended with a third category (VST3/CLAP) that didn't exist before.
+# SWS/ReaPack: idempotent launch-time symlinks into $REAPER_CONFIG/
+# UserPlugins — see wrapper/reaper/pkgs/dmg.nix's fts-reaper-launcher.
 { ... }:
 {
   perSystem = { pkgs, lib, config, ... }:
@@ -24,32 +29,26 @@
       sws = pkgs.callPackage (vendor + "/wrapper/reaper/pkgs/sws.nix") { };
       reapack = pkgs.callPackage (vendor + "/wrapper/reaper/pkgs/reapack.nix") { };
 
-      # The FTS plugin suite (bundler.toml's 17 CLAP+VST3 plugins),
-      # bundled via fts-plugin-xtask — same recipe `just plugins-bundle`
-      # runs, just inside the crane sandbox (offline: cargoVendorDir
-      # already carries every crate). Single-arch only for now (whatever
-      # `system` this perSystem is evaluating) — no lipo/universal step,
-      # unlike the macOS release artifact.
-      fts-plugins = config.fts.craneLib.buildPackage (config.fts.commonArgs // {
-        pname = "fts-plugins";
+      # This repo's own REAPER extension cdylib, built via crane so it
+      # shares the vendored-deps cache with every other deployable
+      # package here (offline sandbox build). `daw-reaper`/`reaper-*`
+      # need pkg-config + mold same as fts-extensions-actions' other
+      # consumers, hence commonArgs rather than a bare buildPackage.
+      fts-extensions-so = config.fts.craneLib.buildPackage (config.fts.commonArgs // {
+        pname = "fts-extensions-so";
         version = "0.1.0";
         cargoArtifacts = null;
-        cargoExtraArgs = "--package fts-plugin-xtask";
+        cargoExtraArgs = "--package fts-extensions --release";
         buildInputs = config.fts.buildInputs;
-        # python3 explicitly: stylo's build.rs (nice-plug-dioxus/Blitz) shells
-        # out to `python3` and needs it on PATH, not just linkable.
-        nativeBuildInputs = config.fts.nativeBuildInputs ++ [ pkgs.python3 ];
         doNotPostBuildInstallCargoBinaries = true;
         doCheck = false;
-        buildPhaseCargoCommand = ''
-          for p in eq comp reverb delay tune modulation nam level saturate \
-                   signal guide gate limiter trigger meter pitch unison; do
-            cargo run -q -p fts-plugin-xtask -- bundle -p "$p-plugin" --release --offline
-          done
-        '';
+        # `fts-extensions` is a cdylib (crate-type = ["cdylib", "rlib"]) —
+        # crane's default `cargo install` step only knows binaries, so
+        # copy the built shared object out by hand. REAPER's loader
+        # expects the plugin filename without the `lib` prefix.
         installPhaseCommand = ''
           mkdir -p $out
-          cp -r target/bundled/. $out/
+          cp target/release/libreaper_fts_extensions.so $out/reaper_fts_extensions.so
         '';
       });
 
@@ -146,14 +145,13 @@
 
           ln -sf "${sws}"/UserPlugins/* "$CONFIG_DIR/UserPlugins/" 2>/dev/null || true
           ln -sf "${reapack}"/UserPlugins/* "$CONFIG_DIR/UserPlugins/" 2>/dev/null || true
-          find "${fts-plugins}" \( -iname '*.vst3' -o -iname '*.clap' \) -maxdepth 3 -print0 \
-            | xargs -0 -I{} ln -sf {} "$CONFIG_DIR/UserPlugins/"
+          ln -sf "${fts-extensions-so}/reaper_fts_extensions.so" "$CONFIG_DIR/UserPlugins/reaper_fts_extensions.so"
 
           exec "${reaper}/bin/reaper" -cfgfile "$CONFIG_DIR/reaper.ini" -newinst "$@"
         '';
       };
     in
     {
-      packages = { inherit reaper sws reapack fts-plugins fts-reaper; };
+      packages = { inherit reaper sws reapack fts-extensions-so fts-reaper; };
     };
 }

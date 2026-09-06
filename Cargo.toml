@@ -27,24 +27,27 @@ license = "GPL-3.0-or-later"
 repository = "https://github.com/FastTrackStudios/fts-extensions"
 
 [workspace.dependencies]
-daw = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2" }
-daw-actions = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2" }
-daw-synchronization = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2" }
-daw-reaper = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2", default-features = false }
-daw-extension-runtime = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2" }
-reaper-config = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2" }
-reaper-input = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2", default-features = false }
-fts-launcher = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2" }
+daw = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
+daw-actions = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
+daw-synchronization = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
+daw-reaper = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10", default-features = false }
+daw-extension-runtime = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
+reaper-config = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
+reaper-input = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10", default-features = false }
+fts-launcher = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
 fts-extensions-actions = { path = "apps/extensions/reaper-fts-extensions/actions" }
-session = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.2" }
-keyflow-orchestra = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.2" }
-expression-editor-core = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2" }
-expression-editor-daw = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2" }
-expression-editor-reaper = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2" }
-expression-editor-ui = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.2" }
-architect = { git = "https://github.com/FastTrackStudios/architect", tag = "v0.0.2" }
-architect-ui = { git = "https://github.com/FastTrackStudios/architect", tag = "v0.0.2" }
-dynamic-template = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.2" }
+session = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.5" }
+# Lives in the keyflow repo, not session — this had pinned the session repo,
+# where it has never existed, and only resolved because a local [patch]
+# redirected it.
+keyflow-orchestra = { git = "https://github.com/FastTrackStudios/keyflow", tag = "v0.2.2" }
+expression-editor-core = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
+expression-editor-daw = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
+expression-editor-reaper = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
+expression-editor-ui = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.10" }
+architect = { git = "https://github.com/FastTrackStudios/architect", tag = "v0.7.1" }
+architect-ui = { git = "https://github.com/FastTrackStudios/architect", tag = "v0.7.1" }
+dynamic-template = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.5" }
 reaper-low = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
 reaper-medium = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
 reaper-high = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
@@ -158,3 +161,18 @@ opt-level = 1
 #
 # If a dev run ever xruns on a path not covered here: run it --release
 # (the launch paths already do), or add the crate to this list.
+
+# VOYAGER-LOCAL / dev-only patch: pull today's real fixes (daw-reaper
+# ProjectContext bug, dawfile-reaper region-pairing, session RPC
+# main-thread bounce) into fts-extensions instead of the stale v0.0.2
+# tags above. Machine-specific; never commit.
+[patch.crates-io]
+# Vendored phon / phon-jit rc.5, same source `session` uses: a one-line
+# build.rs fix forcing the stable, call-based stencils (upstream's nightly
+# detection can be true while no real nightly is present, which broke the
+# build on the pinned toolchain). phon-jit had been pointing at a
+# `.voyager-local-phon-jit-rc5` directory that does not exist, which made the
+# whole workspace unresolvable. Drop the vendor once phon-jit builds on
+# stable.
+phon-jit = { git = "https://github.com/FastTrackStudios/vendor", tag = "v0.1.0" }
+phon = { git = "https://github.com/FastTrackStudios/vendor", tag = "v0.1.0" }

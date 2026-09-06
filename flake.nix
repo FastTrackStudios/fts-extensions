@@ -1,5 +1,5 @@
 {
-  description = "FastTrackStudio — one workspace: daw / session / signal / keyflow + THE app";
+  description = "fts-extensions — DAW-host extension cdylibs (REAPER first)";
 
   # Dendritic layout (den): every .nix under nix/modules/ is a
   # flake-parts module, auto-loaded by import-tree — one file per

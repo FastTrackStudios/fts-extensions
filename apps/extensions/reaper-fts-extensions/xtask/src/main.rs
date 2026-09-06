@@ -171,7 +171,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// Install config symlinks for all modules into `$resources_dir/fasttrackstudio/`.
 ///
 /// Each module gets its own subdirectory. Symlinks point back to the
-/// in-tree source directories so config files are live-editable.
+/// crate's own source tree, resolved through `cargo metadata` rather than
+/// a path relative to `repo_root` — `reaper-input` and `fts-launcher`
+/// moved into the `daw` git dependency in the August 2026 split, so their
+/// config lives under `~/.cargo/git/checkouts/...`, not in this repo.
 fn install_configs(
     repo_root: &std::path::Path,
     resources_dir: &str,
@@ -179,10 +182,7 @@ fn install_configs(
     let fts_dir = PathBuf::from(resources_dir).join("fasttrackstudio");
 
     // ── input: keybind profiles + workflows ──
-    let input_src = canonicalize_ctx(
-        &repo_root.join("features/reaper/reaper-input/config/config"),
-        "reaper-input keybind config",
-    )?;
+    let input_src = crate_dir(repo_root, "reaper-input")?.join("config/config");
     let input_keybinds = fts_dir.join("input/keybinds");
     std::fs::create_dir_all(&input_keybinds)?;
     for name in &[
@@ -203,10 +203,7 @@ fn install_configs(
     println!("  input: keybinds + workflows");
 
     // ── launcher: action packs ──
-    let launcher_src = canonicalize_ctx(
-        &repo_root.join("features/launcher/fts-launcher/packs"),
-        "fts-launcher packs",
-    )?;
+    let launcher_src = crate_dir(repo_root, "fts-launcher")?.join("packs");
     let launcher_packs = fts_dir.join("launcher/packs");
     std::fs::create_dir_all(&launcher_packs)?;
     for name in &["reaper-core", "reaper-visibility"] {
@@ -216,6 +213,45 @@ fn install_configs(
 
     println!("  Config installed -> {}", fts_dir.display());
     Ok(())
+}
+
+/// The source directory of a workspace-resolved crate, per `cargo metadata`
+/// (which knows the real, hash-suffixed checkout path for a git dependency;
+/// a path guessed relative to `repo_root` does not survive the crate having
+/// moved to another repo).
+fn crate_dir(
+    repo_root: &std::path::Path,
+    package: &str,
+) -> Result<PathBuf, Box<dyn std::error::Error>> {
+    let output = std::process::Command::new("cargo")
+        .args(["metadata", "--format-version=1", "--no-deps=false"])
+        .current_dir(repo_root)
+        .output()?;
+    if !output.status.success() {
+        return Err(format!(
+            "cargo metadata failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        )
+        .into());
+    }
+    let metadata: serde_json::Value = serde_json::from_slice(&output.stdout)?;
+    let manifest_path = metadata["packages"]
+        .as_array()
+        .ok_or("cargo metadata: no packages array")?
+        .iter()
+        .find(|p| p["name"] == package)
+        .ok_or_else(|| {
+            format!(
+                "cargo metadata: package `{package}` not found in the resolved dependency graph"
+            )
+        })?["manifest_path"]
+        .as_str()
+        .ok_or("cargo metadata: manifest_path missing")?
+        .to_string();
+    PathBuf::from(manifest_path)
+        .parent()
+        .map(PathBuf::from)
+        .ok_or_else(|| format!("manifest path for `{package}` has no parent directory").into())
 }
 
 /// `canonicalize()` with an error message that says WHICH path was missing.
