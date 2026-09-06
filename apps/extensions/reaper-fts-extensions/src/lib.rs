@@ -326,14 +326,14 @@ fn initialize_daw(tokio_runtime: &tokio::runtime::Runtime) -> eyre::Result<Daw> 
             // hydration. Those services resolve the global DAW lazily at call
             // time so startup only creates one in-process service graph.
             let handler = create_daw_handler();
+            // `session::host::layer_router` mounts session's whole RPC
+            // surface — the setlist/chart services *and* the mode /
+            // take-ranking / record-control control surfaces external Vox
+            // peers (CLI, desktop, mobile) call. Session owns that list so
+            // this host and `session-extension` cannot drift; they used to
+            // assemble it separately and had already diverged.
             #[cfg(feature = "mod-session")]
-            let handler = {
-                let h = session::daw_services::layer_services_with_daw(handler, daw_reaper::Reaper);
-                // Mount the FTS session control surfaces (mode /
-                // take-ranking / record control) so external Vox
-                // peers — CLI, desktop, mobile — can call them.
-                session::daw_services::layer_control_surfaces(h)
-            };
+            let handler = session::host::layer_router(handler, daw_reaper::Reaper);
 
             // The dock host is a different backend from `Reaper`, so it
             // does not come in via `Reaper::into_router()` — it has to be
@@ -580,17 +580,10 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
     // ── Collect modules ──────────────────────────────────────────────────
     // Each library implements daw::DawModule and exports module(). Modules
     // are gated by per-module cargo features so we can bisect startup cost.
-    let modules: Vec<Box<dyn DawModule>> = vec![
+    #[allow(unused_mut)]
+    let mut modules: Vec<Box<dyn DawModule>> = vec![
         #[cfg(feature = "mod-launcher")]
         fts_launcher::daw_module::module(),
-        #[cfg(feature = "mod-session")]
-        session::daw_module::module_with_daw(daw_reaper::Reaper),
-        // Registered directly (session embeds it for FTS_SESSION_* dispatch but
-        // never chains its action defs) so the FTS_VISIBILITY_MANAGER_* /
-        // FTS_DYNAMIC_TEMPLATE_* / FTS_AUTO_COLOR_* actions land in REAPER's
-        // action list — bindable, and resolvable by named_command_lookup.
-        #[cfg(feature = "mod-session")]
-        dynamic_template::daw_module::module(),
         #[cfg(feature = "mod-sync")]
         daw_synchronization::daw_module::module(),
         #[cfg(feature = "mod-input")]
@@ -598,6 +591,13 @@ fn plugin_main(context: PluginContext) -> Result<(), Box<dyn Error>> {
         #[cfg(feature = "mod-expression-editor")]
         expression_editor_reaper::module(),
     ];
+    // Session contributes more than one module (its own, plus
+    // dynamic-template, whose FTS_VISIBILITY_MANAGER_* /
+    // FTS_DYNAMIC_TEMPLATE_* / FTS_AUTO_COLOR_* actions only reach REAPER's
+    // action list if the host registers it). Session names that list so a
+    // module added there reaches this host without editing this vec.
+    #[cfg(feature = "mod-session")]
+    modules.extend(session::host::modules(daw_reaper::Reaper));
     let module_count = modules.len();
 
     // Initialize all modules before collecting actions.
@@ -896,8 +896,9 @@ where
     architect_actions::register_actions(backend);
     #[cfg(feature = "mod-session")]
     {
-        session::register_all_actions(backend, daw_reaper::Reaper);
+        // session + dynamic-template, named by session itself so this host
+        // and `session-extension` register the same set.
+        session::host::register_actions(backend, daw_reaper::Reaper);
         daw_actions::register_all_actions(backend, daw_reaper::Reaper);
-        dynamic_template::daw_module::register_architect_actions(backend);
     }
 }

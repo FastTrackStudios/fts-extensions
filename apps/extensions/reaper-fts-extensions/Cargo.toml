@@ -63,7 +63,7 @@ fts-extensions-actions = { workspace = true }
 fts-launcher = { workspace = true, optional = true }
 
 # Modules — each implements daw::DawModule
-session = { workspace = true, optional = true }
+session = { workspace = true, optional = true, features = ["reaper"] }
 # Registered directly (not just via session) so the visibility-manager /
 # template / auto-color actions land in REAPER's action list, and so the
 # mode bridge can call the per-mode visibility entry point without going

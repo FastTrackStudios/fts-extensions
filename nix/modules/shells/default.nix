@@ -113,11 +113,11 @@
         fi
 
         echo ""
-        echo "  FastTrackStudio dev shell"
+        echo "  fts-extensions dev shell"
         echo "  ─────────────────────────────────────────────"
         echo "  cargo check --workspace"
-        echo "  cargo build -p fasttrackstudio — THE app (--engine = headless rig)"
-        echo "  (cd apps/fasttrackstudio && dx build --platform web --no-default-features --features signal)"
+        echo "  just reaper install     — build + symlink the .so into REAPER's UserPlugins"
+        echo "  cargo run -p fts-extensions-xtask — in-REAPER integration suite"
         echo ""
         echo "  Rust: $(rustc --version)"
         echo "  dx:   $(dx --version 2>/dev/null || echo 'not available')"
