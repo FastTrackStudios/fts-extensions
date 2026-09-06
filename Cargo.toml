@@ -174,5 +174,13 @@ opt-level = 1
 # `.voyager-local-phon-jit-rc5` directory that does not exist, which made the
 # whole workspace unresolvable. Drop the vendor once phon-jit builds on
 # stable.
-phon-jit = { git = "https://github.com/FastTrackStudios/vendor", tag = "v0.2.2" }
+# v0.1.0, not the newer v0.2.2 `session` uses: a [patch.crates-io] only
+# applies when its version MATCHES what the graph resolved, and this
+# workspace's chain (vox-phon 0.10.0-rc.5 -> phon rc.5) is on rc.5 while
+# session's is on rc.7. Point this at the rc.7 tag and the patch silently
+# stops applying — cargo files it under [patch.unused] and builds the
+# unpatched crates.io rc.5, which dies on Apple Silicon with
+# `error[E0658]: become expression is experimental`. Each repo pins the
+# vendor tag matching its own graph; both carry the same build.rs fix.
+phon-jit = { git = "https://github.com/FastTrackStudios/vendor", tag = "v0.1.0" }
 phon = { git = "https://github.com/FastTrackStudios/vendor", tag = "v0.1.0" }
