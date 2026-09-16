@@ -297,6 +297,15 @@ extern "C" fn timer_callback() {
                 "poll_and_broadcast_meters",
                 daw_reaper::poll_and_broadcast_meters,
             );
+            // Grouping reads a slice of the tracks per tick rather than
+            // all of them, so this is a flat cost and not one that grows
+            // with the session. It is the only path that sees a group
+            // edited by hand in REAPER's own matrix dialog, which goes
+            // through no setter and therefore publishes nothing.
+            catch_panic(
+                "poll_and_broadcast_grouping",
+                daw_reaper::poll_and_broadcast_grouping,
+            );
         }
         // Keep the audio-sync multi-project slot table in sync with
         // REAPER's open project tabs. Cheap (one `enum_projects` loop)
