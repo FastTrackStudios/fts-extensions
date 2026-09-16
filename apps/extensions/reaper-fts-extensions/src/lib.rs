@@ -274,6 +274,29 @@ extern "C" fn timer_callback() {
                 "poll_and_broadcast_tracks",
                 daw_reaper::poll_and_broadcast_tracks,
             );
+            // The four this host used to omit. Each early-returns when
+            // nothing is subscribed, so an unattached REAPER pays only a
+            // subscriber count per tick — and without them an attached
+            // client subscribes successfully and then waits forever,
+            // which reads as a broken window rather than a host that is
+            // not looking.
+            //
+            // Meters is the one that shows: the session window's meter
+            // bridge subscribes on open, so a whole mixer sits at
+            // silence while REAPER plays.
+            catch_panic("poll_and_broadcast_fx", daw_reaper::poll_and_broadcast_fx);
+            catch_panic(
+                "poll_and_broadcast_routing",
+                daw_reaper::poll_and_broadcast_routing,
+            );
+            catch_panic(
+                "poll_and_broadcast_takes",
+                daw_reaper::poll_and_broadcast_takes,
+            );
+            catch_panic(
+                "poll_and_broadcast_meters",
+                daw_reaper::poll_and_broadcast_meters,
+            );
         }
         // Keep the audio-sync multi-project slot table in sync with
         // REAPER's open project tabs. Cheap (one `enum_projects` loop)
