@@ -36,7 +36,7 @@ reaper-config = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.1
 reaper-input = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.16", default-features = false }
 fts-launcher = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.16" }
 fts-extensions-actions = { path = "apps/extensions/reaper-fts-extensions/actions" }
-session = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.8" }
+session = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.10" }
 # Lives in the keyflow repo, not session — this had pinned the session repo,
 # where it has never existed, and only resolved because a local [patch]
 # redirected it.
@@ -47,7 +47,7 @@ expression-editor-reaper = { git = "https://github.com/FastTrackStudios/daw", ta
 expression-editor-ui = { git = "https://github.com/FastTrackStudios/daw", tag = "v0.0.16" }
 architect = { git = "https://github.com/FastTrackStudios/architect", tag = "v0.7.1" }
 architect-ui = { git = "https://github.com/FastTrackStudios/architect", tag = "v0.7.1" }
-dynamic-template = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.8" }
+dynamic-template = { git = "https://github.com/FastTrackStudios/session", tag = "v0.0.10" }
 reaper-low = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
 reaper-medium = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
 reaper-high = { git = "https://codeberg.org/FastTrackStudios/reaper-rs.git", branch = "feat/reaper-763-ruler-lanes" }
